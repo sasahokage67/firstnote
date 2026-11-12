@@ -1,0 +1,2 @@
+- Share branding through Logo (src/components/Logo.tsx) and role entry through TeamRoleField so public pages and profile editing stay consistent.
+- Keep award descriptions in the award catalogue alongside stable award IDs so switching awards never changes task associations.
