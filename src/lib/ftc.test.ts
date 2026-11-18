@@ -1,9 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { readiness, matchStats, AWARDS, EVENTS } from "./ftc";
+import { readiness, matchStats, AWARDS } from "./ftc";
 
 describe("ftc rules", () => {
   it("has all 11 awards", () => expect(AWARDS).toHaveLength(11));
-  it("has 8 events", () => expect(EVENTS).toHaveLength(8));
   it("match total high and average", () => {
     const s = matchStats([
       { auto_score: 10, teleop_score: 20, endgame_score: 5 },

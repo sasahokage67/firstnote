@@ -1,14 +1,3 @@
-export const EVENTS = [
-  { id: "almaty-scrim", name: "Almaty FIRST Scrimmage", date: "2026-10-24T09:00:00+05:00" },
-  { id: "kz-scrim", name: "Kazakhstan FIRST Scrimmage", date: "2026-11-01T09:00:00+05:00" },
-  { id: "almaty-reg", name: "Almaty FIRST Regional", date: "2026-11-28T09:00:00+05:00" },
-  { id: "jetisu-reg", name: "Jetisu FIRST Regional", date: "2026-12-03T09:00:00+05:00" },
-  { id: "ontustik-q", name: "Ontustik FIRST Qualifier", date: "2027-01-07T09:00:00+05:00" },
-  { id: "daryn-q", name: "Daryn FIRST Qualifier", date: "2027-01-12T09:00:00+05:00" },
-  { id: "ca-champ", name: "Central Asian FIRST Championship", date: "2027-02-10T09:00:00+05:00" },
-  { id: "worlds", name: "FIRST World Championship", date: "2027-04-29T09:00:00-05:00" },
-] as const;
-
 export const OTHER_EVENTS = [
   { id: "quant-live", name: "Quant FTC LiveStream with Coach Pratt", date: "2026-11-08T12:00:00+05:00" },
   { id: "andymark-meet", name: "“Get knowledge with Bolt.m3” — Google Meet with AndyMark", date: "2026-11-11T18:00:00+05:00" },
