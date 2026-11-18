@@ -17,10 +17,12 @@ import {
   useFtcEvents,
 } from "@/lib/events";
 import { Input } from "@/components/ui/input";
+import { CountryField, DEFAULT_COUNTRY, saveHomeCountry, useHomeCountry } from "@/components/CountryField";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SectionTitle, type WsProps } from "./shared";
 
-const LS_COUNTRY = "firstnote-country";
 const LS_EVENT = "firstnote-event";
 const PAGE = 120;
 
@@ -44,7 +46,18 @@ type Selected = { kind: "ftc"; ev: FtcEvent } | { kind: "other"; id: string; nam
 
 export function Overview({ data }: WsProps) {
   const { events, loading, error } = useFtcEvents();
-  const [country, setCountry] = useState<CountryCode>(() => (load(LS_COUNTRY) as CountryCode) || "KZ");
+  // Each user only sees FTC events of the country they registered with (+ Worlds)
+  const { country: home, loaded: homeLoaded } = useHomeCountry();
+  const country: CountryCode = home ?? DEFAULT_COUNTRY;
+  const needsCountry = homeLoaded && !home;
+  const [draftCountry, setDraftCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
+  const [savingCountry, setSavingCountry] = useState(false);
+  async function confirmCountry() {
+    setSavingCountry(true);
+    const r = await saveHomeCountry(draftCountry);
+    setSavingCountry(false);
+    if (r.error) toast.error(r.error.message);
+  }
   const [region, setRegion] = useState("");
   const [q, setQ] = useState("");
   const [showAll, setShowAll] = useState(false);
@@ -83,18 +96,21 @@ export function Overview({ data }: WsProps) {
   const selected: Selected | null = useMemo(() => {
     const other = OTHER_EVENTS.find((o) => o.id === selId);
     if (other) return { kind: "other", id: other.id, name: other.name, ts: new Date(other.date).getTime() };
-    const ev = events.find((e) => e.c === selId) ?? list.find((e) => eventEnd(e) >= now) ?? worlds;
+    if (!homeLoaded) return null;
+    // only the user's own country (or Worlds) can be selected
+    const saved = events.find((e) => e.c === selId && (e.co === country || e.t === "worlds"));
+    const ev = saved ?? list.find((e) => eventEnd(e) >= now) ?? worlds;
     return ev ? { kind: "ftc", ev } : null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selId, events, list, worlds]);
+  }, [selId, events, list, worlds, country, homeLoaded]);
 
-  function pickCountry(c: CountryCode) {
-    setCountry(c);
-    save(LS_COUNTRY, c);
+  // reset filters when the user's country changes
+  useEffect(() => {
     setRegion("");
     setQ("");
     setLimit(PAGE);
-  }
+  }, [country]);
+
   function pick(id: string) {
     setSelId(id);
     save(LS_EVENT, id);
@@ -174,85 +190,85 @@ export function Overview({ data }: WsProps) {
 
       {/* Event browser */}
       <div className="mt-6 rounded-md border border-border bg-background p-4 sm:p-6">
-        <div className="flex flex-wrap gap-2">
-          {COUNTRIES.map((c) => {
-            const n = events.filter((e) => e.co === c.code && e.t !== "worlds" && COMPETITION_KINDS.includes(e.t) && eventEnd(e) >= now).length;
-            return (
-              <button
-                key={c.code}
-                type="button"
-                onClick={() => pickCountry(c.code)}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition",
-                  c.code === country ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <span>{c.flag}</span> {c.name}
-                <span className="font-mono text-[11px] text-muted-foreground">{loading ? "…" : n}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => { setQ(e.target.value); setLimit(PAGE); }} placeholder="Search event, city, code…" className="pl-8" />
+        {needsCountry ? (
+          <div className="max-w-sm space-y-3">
+            <p className="text-sm">Choose your country to see its FTC events. You can change it later in your profile.</p>
+            <CountryField value={draftCountry} onChange={setDraftCountry} />
+            <Button variant="hero" onClick={confirmCountry} disabled={savingCountry}>Show events</Button>
           </div>
-          {regions.length > 1 && (
-            <select
-              value={region}
-              onChange={(e) => { setRegion(e.target.value); setLimit(PAGE); }}
-              className="h-9 rounded-md border border-input bg-background px-2 text-sm sm:w-56"
-              aria-label={country === "US" ? "Region" : "City"}
-            >
-              <option value="">{country === "US" ? "All regions" : "All cities"}</option>
-              {regions.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-          )}
-        </div>
-        <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
-          <label className="flex cursor-pointer items-center gap-1.5">
-            <input type="checkbox" checked={showPast} onChange={(e) => setShowPast(e.target.checked)} /> Show past events
-          </label>
-          <label className="flex cursor-pointer items-center gap-1.5">
-            <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> Include kickoffs, workshops, interviews
-          </label>
-        </div>
-
-        {worlds && (
-          <EventRow ev={worlds} active={selected?.kind === "ftc" && selected.ev.c === worlds.c} past={eventEnd(worlds) < now} onPick={pick} className="mt-4 border-b border-border pb-2" />
+        ) : (
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              FTC events · <span className="text-foreground">{meta.flag} {meta.name}</span>
+              {!loading && <> · {list.length} shown</>}
+            </p>
+            <p className="text-[11px] text-muted-foreground">Change country in your profile</p>
+          </div>
         )}
 
-        <div className="mt-2">
-          {loading ? (
-            <p className="py-6 text-sm text-muted-foreground">Loading events…</p>
-          ) : list.length === 0 ? (
-            <div className="py-6 text-sm text-muted-foreground">
-              <p>{meta.note ?? (error ? "Couldn't load the event list." : "No events match these filters.")}</p>
+        {homeLoaded && !needsCountry && (
+          <>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={q} onChange={(e) => { setQ(e.target.value); setLimit(PAGE); }} placeholder="Search event, city, code…" className="pl-8" />
             </div>
-          ) : (
-            <ul>
-              {list.slice(0, limit).map((e) => (
-                <li key={e.c}>
-                  <EventRow ev={e} active={selected?.kind === "ftc" && selected.ev.c === e.c} past={eventEnd(e) < now} onPick={pick} />
-                </li>
-              ))}
-            </ul>
-          )}
-          {list.length > limit && (
-            <button type="button" onClick={() => setLimit((l) => l + PAGE)} className="mt-2 w-full rounded-md border border-border py-2 text-sm text-muted-foreground hover:text-foreground">
-              Show more ({list.length - limit} left)
-            </button>
-          )}
-        </div>
+            {regions.length > 1 && (
+              <select
+                value={region}
+                onChange={(e) => { setRegion(e.target.value); setLimit(PAGE); }}
+                className="h-9 rounded-md border border-input bg-background px-2 text-sm sm:w-56"
+                aria-label={country === "US" ? "Region" : "City"}
+              >
+                <option value="">{country === "US" ? "All regions" : "All cities"}</option>
+                {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            )}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
+            <label className="flex cursor-pointer items-center gap-1.5">
+              <input type="checkbox" checked={showPast} onChange={(e) => setShowPast(e.target.checked)} /> Show past events
+            </label>
+            <label className="flex cursor-pointer items-center gap-1.5">
+              <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> Include kickoffs, workshops, interviews
+            </label>
+          </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border pt-3 text-[11px] text-muted-foreground">
-          <span>Source: FIRST Tech Challenge event list, 2026-27 BIOBUZZ season.</span>
-          {meta.links?.map((l) => (
-            <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="underline hover:text-foreground">{l.label}</a>
-          ))}
-        </div>
+          {worlds && (
+            <EventRow ev={worlds} active={selected?.kind === "ftc" && selected.ev.c === worlds.c} past={eventEnd(worlds) < now} onPick={pick} className="mt-4 border-b border-border pb-2" />
+          )}
+
+          <div className="mt-2">
+            {loading ? (
+              <p className="py-6 text-sm text-muted-foreground">Loading events…</p>
+            ) : list.length === 0 ? (
+              <div className="py-6 text-sm text-muted-foreground">
+                <p>{meta.note ?? (error ? "Couldn't load the event list." : "No events match these filters.")}</p>
+              </div>
+            ) : (
+              <ul>
+                {list.slice(0, limit).map((e) => (
+                  <li key={e.c}>
+                    <EventRow ev={e} active={selected?.kind === "ftc" && selected.ev.c === e.c} past={eventEnd(e) < now} onPick={pick} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            {list.length > limit && (
+              <button type="button" onClick={() => setLimit((l) => l + PAGE)} className="mt-2 w-full rounded-md border border-border py-2 text-sm text-muted-foreground hover:text-foreground">
+                Show more ({list.length - limit} left)
+              </button>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border pt-3 text-[11px] text-muted-foreground">
+            <span>Source: FIRST Tech Challenge event list, 2026-27 BIOBUZZ season.</span>
+            {meta.links?.map((l) => (
+              <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="underline hover:text-foreground">{l.label}</a>
+            ))}
+          </div>
+          </>
+        )}
       </div>
 
       {/* Team "other events" */}

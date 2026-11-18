@@ -20,6 +20,9 @@ import { Board } from "@/components/ws/Board";
 import { Journal } from "@/components/ws/Journal";
 import { Portfolio } from "@/components/ws/Portfolio";
 import { Roster } from "@/components/ws/Roster";
+import { CountryField, DEFAULT_COUNTRY, saveHomeCountry, useHomeCountry } from "@/components/CountryField";
+import type { CountryCode } from "@/lib/events";
+
 
 export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({
@@ -185,10 +188,16 @@ function ProfileDialog({ open, onOpenChange, profile }: { open: boolean; onOpenC
   const [name, setName] = useState(profile.full_name);
   const [role, setRole] = useState(profile.team_role);
   const [avatar, setAvatar] = useState(profile.avatar_url ?? "");
+  const { country: home } = useHomeCountry();
+  const [country, setCountry] = useState<CountryCode | null>(null);
   async function save() {
     if (!name.trim() || !role.trim()) { toast.error("Name and role are required"); return; }
     const { error } = await supabase.from("profiles").update({ full_name: name, team_role: role, avatar_url: avatar || null }).eq("id", profile.id);
     if (error) { toast.error(error.message); return; }
+    if (country && country !== home) {
+      const r = await saveHomeCountry(country);
+      if (r.error) { toast.error(r.error.message); return; }
+    }
     qc.invalidateQueries();
     onOpenChange(false);
   }
@@ -199,6 +208,7 @@ function ProfileDialog({ open, onOpenChange, profile }: { open: boolean; onOpenC
         <div className="space-y-4">
           <div className="space-y-1.5"><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
           <TeamRoleField value={role} onChange={setRole} />
+          <CountryField value={country ?? home ?? DEFAULT_COUNTRY} onChange={setCountry} />
           <div className="space-y-1.5"><Label>Avatar image URL</Label><Input value={avatar} onChange={(e) => setAvatar(e.target.value)} placeholder="https://…" /></div>
           <Button variant="hero" className="w-full" onClick={save}>Save</Button>
         </div>

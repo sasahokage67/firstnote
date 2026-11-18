@@ -3,6 +3,8 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { TeamRoleField } from "@/components/TeamRoleField";
+import { CountryField, DEFAULT_COUNTRY } from "@/components/CountryField";
+import type { CountryCode } from "@/lib/events";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
@@ -34,6 +36,7 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState("Member");
+  const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -54,7 +57,7 @@ function AuthPage() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin + "/app", data: { full_name: name, team_role: role } },
+          options: { emailRedirectTo: window.location.origin + "/app", data: { full_name: name, team_role: role, country } },
         });
         if (error) throw error;
         if (!data.session) toast.success("Check your email to confirm your account.");
@@ -91,6 +94,7 @@ function AuthPage() {
             <>
               <div className="space-y-1.5"><Label>Name</Label><Input required value={name} onChange={(e) => setName(e.target.value)} /></div>
               <TeamRoleField value={role} onChange={setRole} />
+              <CountryField value={country} onChange={setCountry} />
             </>
           )}
           <div className="space-y-1.5"><Label>Email</Label><Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
