@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { COUNTRIES, type CountryCode } from "@/lib/events";
-import { AREA_LABEL, AREAS, isArea } from "@/lib/regions";
+import { AREAS, areaNameIn, isArea } from "@/lib/regions";
+import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 
 export const DEFAULT_COUNTRY: CountryCode = "KZ";
@@ -16,33 +17,36 @@ export type HomeLocation = { country: CountryCode; area: string | null };
 
 /** Country + state/city picker shared by sign-up, the profile dialog and the events block. */
 export function CountryField({ value, onChange }: { value: HomeLocation; onChange: (value: HomeLocation) => void }) {
-  const areas = Object.entries(AREAS[value.country]).sort((a, b) => a[1].localeCompare(b[1]));
+  const { t, lang } = useI18n();
+  const areas = Object.keys(AREAS[value.country])
+    .map((code) => [code, areaNameIn(lang, value.country, code)] as const)
+    .sort((a, b) => a[1].localeCompare(b[1], lang));
   return (
     <div className="space-y-3">
       <div className="space-y-1.5">
-        <Label>Country</Label>
+        <Label>{t("country.label")}</Label>
         <Select value={value.country} onValueChange={(v) => isCountry(v) && onChange({ country: v, area: null })}>
           <SelectTrigger aria-label="Choose country"><SelectValue /></SelectTrigger>
           <SelectContent>
             {COUNTRIES.map((c) => (
-              <SelectItem key={c.code} value={c.code}>{c.flag} {c.name}</SelectItem>
+              <SelectItem key={c.code} value={c.code}>{c.flag} {t(`country.${c.code}`)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       {areas.length > 0 && (
         <div className="space-y-1.5">
-          <Label>{AREA_LABEL[value.country]}</Label>
+          <Label>{t(`area.${value.country}`)}</Label>
           <Select value={value.area ?? WHOLE} onValueChange={(v) => onChange({ ...value, area: v === WHOLE ? null : v })}>
-            <SelectTrigger aria-label={`Choose ${AREA_LABEL[value.country].toLowerCase()}`}><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label={t(`area.${value.country}`)}><SelectValue /></SelectTrigger>
             <SelectContent className="max-h-72">
-              <SelectItem value={WHOLE}>Whole country</SelectItem>
+              <SelectItem value={WHOLE}>{t("country.whole")}</SelectItem>
               {areas.map(([code, name]) => <SelectItem key={code} value={code}>{name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
       )}
-      <p className="text-xs text-muted-foreground">You'll see FTC events of this country, with your area first.</p>
+      <p className="text-xs text-muted-foreground">{t("country.hint")}</p>
     </div>
   );
 }

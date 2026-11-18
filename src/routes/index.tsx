@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Trophy, KanbanSquare, BookOpen } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher, useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/app", replace: true });
@@ -31,26 +33,29 @@ function Landing() {
     return () => data.subscription.unsubscribe();
   }, [navigate]);
   const features = [
-    { icon: Trophy, t: "All 11 FTC awards", d: "Requirements and owners per award." },
-    { icon: KanbanSquare, t: "Team Kanban", d: "Hardware, software, outreach, logistics." },
-    { icon: BookOpen, t: "Journal & scorer", d: "Daily logs and practice match stats." },
+    { icon: Trophy, t: t("landing.f1.t"), d: t("landing.f1.d") },
+    { icon: KanbanSquare, t: t("landing.f2.t"), d: t("landing.f2.d") },
+    { icon: BookOpen, t: t("landing.f3.t"), d: t("landing.f3.d") },
   ];
   return (
     <div className="min-h-screen px-6">
       <header className="mx-auto flex max-w-6xl items-center justify-between py-6">
         <Link to="/" aria-label="firstnote home"><Logo className="h-9" /></Link>
-        <Button asChild variant="ghost"><Link to="/auth">Sign in</Link></Button>
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+          <Button asChild variant="ghost"><Link to="/auth">{t("common.signIn")}</Link></Button>
+        </div>
       </header>
       <main className="mx-auto max-w-6xl py-20">
-        <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">FIRST Tech Challenge · 2026–27</p>
+        <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">{t("landing.kicker")}</p>
         <h1 className="mt-4 max-w-3xl text-5xl font-bold leading-[1.05] md:text-7xl">
-          One workspace for your whole <span className="text-gradient">FTC</span> season.
+          {t("landing.title1")}<span className="text-gradient">FTC</span>{t("landing.title2")}
         </h1>
         <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-          Countdown to every event, track award readiness, run the build board and finish the portfolio — synced live across the team.
+          {t("landing.sub")}
         </p>
         <div className="mt-10 flex gap-3">
-          <Button asChild variant="hero" size="lg"><Link to="/auth">Enter workspace</Link></Button>
+          <Button asChild variant="hero" size="lg"><Link to="/auth">{t("landing.enter")}</Link></Button>
         </div>
         <div className="mt-24 grid gap-4 md:grid-cols-3">
           {features.map((f) => (

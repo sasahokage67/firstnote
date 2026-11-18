@@ -103,6 +103,11 @@ function tzOffsetMinutes(utcMs: number, tz: string): number {
   return Math.round((asUtc - utcMs) / 60000);
 }
 
+/** Clock time only, e.g. "09:00", in the given zone. */
+export function clockIn(ts: number, tz: string | undefined, locale?: string): string {
+  return new Date(ts).toLocaleTimeString(locale, { timeZone: tz, hour: "2-digit", minute: "2-digit" });
+}
+
 /** UTC timestamp of `date` at `hour`:00 wall-clock time in `tz`. */
 export function zonedTime(date: string, tz: string, hour = DEFAULT_START_HOUR): number {
   const [y, m, d] = date.split("-").map(Number);
@@ -128,8 +133,8 @@ export function gmtLabel(ts: number, tz: string): string {
   return `GMT${sign}${Math.floor(a / 60)}${a % 60 ? ":" + String(a % 60).padStart(2, "0") : ""}`;
 }
 
-export function formatIn(ts: number, tz: string | undefined, withTime = true): string {
-  return new Date(ts).toLocaleString(undefined, {
+export function formatIn(ts: number, tz: string | undefined, withTime = true, locale?: string): string {
+  return new Date(ts).toLocaleString(locale, {
     timeZone: tz,
     weekday: "short",
     day: "2-digit",
@@ -138,11 +143,11 @@ export function formatIn(ts: number, tz: string | undefined, withTime = true): s
   });
 }
 
-export function dateRange(ev: FtcEvent): string {
+export function dateRange(ev: FtcEvent, locale?: string): string {
   const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", timeZone: "UTC" };
-  const a = new Date(ev.s + "T00:00:00Z").toLocaleDateString(undefined, opts);
+  const a = new Date(ev.s + "T00:00:00Z").toLocaleDateString(locale, opts);
   if (ev.e === ev.s) return a;
-  const b = new Date(ev.e + "T00:00:00Z").toLocaleDateString(undefined, opts);
+  const b = new Date(ev.e + "T00:00:00Z").toLocaleDateString(locale, opts);
   return `${a} – ${b}`;
 }
 
