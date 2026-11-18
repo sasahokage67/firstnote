@@ -3,8 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { TeamRoleField } from "@/components/TeamRoleField";
-import { CountryField, DEFAULT_COUNTRY } from "@/components/CountryField";
-import type { CountryCode } from "@/lib/events";
+import { CountryField, DEFAULT_COUNTRY, type HomeLocation } from "@/components/CountryField";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
@@ -39,24 +38,34 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState("Member");
-  const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
+  const [loc, setLoc] = useState<HomeLocation>({ country: DEFAULT_COUNTRY, area: null });
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    // Only a real recovery link from the email (one-time token in the URL hash) opens the new-password form.
+    // Supabase verifies that token; without it there is no recovery session and the form never shows.
     const hash = new URLSearchParams(window.location.hash.slice(1));
-    const isRecovery = new URLSearchParams(window.location.search).get("reset") === "1" || hash.get("type") === "recovery";
     if (hash.get("error_code") || hash.get("error")) {
       toast.error("This reset link is invalid or has expired. Request a new one.");
       setMode("forgot");
-    } else if (isRecovery) {
-      recovering.current = true;
-      setMode("reset");
+    } else if (hash.get("type") === "recovery" && hash.get("access_token")) {
+      recovering.current = true; // block the auto-redirect while Supabase verifies the token
     }
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session && !recovering.current) navigate({ to: "/app", replace: true });
+      if (recovering.current && !data.session) {
+        recovering.current = false;
+        toast.error("This reset link is invalid or has expired. Request a new one.");
+        setMode("forgot");
+        return;
+      }
+      if (recovering.current && data.session) {
+        setMode("reset"); // valid recovery token from the email link
+        return;
+      }
+      if (data.session) navigate({ to: "/app", replace: true });
     });
     const { data } = supabase.auth.onAuthStateChange((event, s) => {
-      if (event === "PASSWORD_RECOVERY") {
+      if (event === "PASSWORD_RECOVERY" && s) {
         recovering.current = true;
         setMode("reset");
         return;
@@ -70,7 +79,7 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: window.location.origin + "/auth?reset=1",
+      redirectTo: window.location.origin + "/auth",
     });
     setBusy(false);
     if (error) {
@@ -87,6 +96,7 @@ function AuthPage() {
     e.preventDefault();
     if (password.length < 6) { toast.error("Password must be at least 6 characters."); return; }
     if (password !== password2) { toast.error("Passwords don't match."); return; }
+    if (!recovering.current) { toast.error("Open the reset link from your email first."); setMode("forgot"); return; }
     setBusy(true);
     const { data: s } = await supabase.auth.getSession();
     if (!s.session) {
@@ -112,7 +122,7 @@ function AuthPage() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin + "/app", data: { full_name: name, team_role: role, country } },
+          options: { emailRedirectTo: window.location.origin + "/app", data: { full_name: name, team_role: role, country: loc.country, area: loc.area } },
         });
         if (error) throw error;
         if (!data.session) toast.success("Check your email to confirm your account.");
@@ -167,7 +177,7 @@ function AuthPage() {
             <>
               <div className="space-y-1.5"><Label>Name</Label><Input required value={name} onChange={(e) => setName(e.target.value)} /></div>
               <TeamRoleField value={role} onChange={setRole} />
-              <CountryField value={country} onChange={setCountry} />
+              <CountryField value={loc} onChange={setLoc} />
             </>
           )}
           <div className="space-y-1.5"><Label>Email</Label><Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>

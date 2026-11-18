@@ -74,7 +74,7 @@ export const COMPETITION_KINDS: EventKind[] = [
  * Edit this list by hand when new local events are announced.
  */
 export const KZ_EXTRA: FtcEvent[] = [
-  { c: "KZ-JETISU", n: "Jetisu FIRST Regional", t: "qualifier", s: "2026-12-03", e: "2026-12-03", city: "", st: "", co: "KZ", rg: "", v: "", tz: "Asia/Qyzylorda", src: "team" },
+  { c: "KZ-JETISU", n: "Jetisu FIRST Regional", t: "qualifier", s: "2026-12-03", e: "2026-12-03", city: "", st: "ZHT", co: "KZ", rg: "", v: "", tz: "Asia/Qyzylorda", src: "team" },
   { c: "KZ-ONTUSTIK", n: "Ontustik FIRST Qualifier", t: "qualifier", s: "2027-01-07", e: "2027-01-07", city: "", st: "", co: "KZ", rg: "", v: "", tz: "Asia/Qyzylorda", src: "team" },
   { c: "KZ-CACMP", n: "Central Asian FIRST Championship", t: "championship", s: "2027-02-10", e: "2027-02-10", city: "", st: "", co: "KZ", rg: "", v: "", tz: "Asia/Qyzylorda", src: "team" },
 ];

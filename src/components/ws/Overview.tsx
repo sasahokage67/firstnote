@@ -17,7 +17,8 @@ import {
   useFtcEvents,
 } from "@/lib/events";
 import { Input } from "@/components/ui/input";
-import { CountryField, DEFAULT_COUNTRY, saveHomeCountry, useHomeCountry } from "@/components/CountryField";
+import { CountryField, DEFAULT_COUNTRY, saveHomeCountry, useHomeCountry, type HomeLocation } from "@/components/CountryField";
+import { areaName, inArea } from "@/lib/regions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,9 @@ import { SectionTitle, type WsProps } from "./shared";
 
 const LS_EVENT = "firstnote-event";
 const PAGE = 120;
+/** After the countdown hits zero the event stays up for one more day (or until it ends), then drops off. */
+const HOLD_MS = 24 * 3600 * 1000;
+const holdUntil = (ev: FtcEvent) => Math.max(eventStart(ev) + HOLD_MS, eventEnd(ev));
 
 function load(key: string) {
   try {
@@ -47,14 +51,14 @@ type Selected = { kind: "ftc"; ev: FtcEvent } | { kind: "other"; id: string; nam
 export function Overview({ data }: WsProps) {
   const { events, loading, error } = useFtcEvents();
   // Each user only sees FTC events of the country they registered with (+ Worlds)
-  const { country: home, loaded: homeLoaded } = useHomeCountry();
+  const { country: home, area: homeArea, loaded: homeLoaded } = useHomeCountry();
   const country: CountryCode = home ?? DEFAULT_COUNTRY;
   const needsCountry = homeLoaded && !home;
-  const [draftCountry, setDraftCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
+  const [draftLoc, setDraftLoc] = useState<HomeLocation>({ country: DEFAULT_COUNTRY, area: null });
   const [savingCountry, setSavingCountry] = useState(false);
   async function confirmCountry() {
     setSavingCountry(true);
-    const r = await saveHomeCountry(draftCountry);
+    const r = await saveHomeCountry(draftLoc);
     setSavingCountry(false);
     if (r.error) toast.error(r.error.message);
   }
@@ -74,18 +78,19 @@ export function Overview({ data }: WsProps) {
   const worlds = events.find((e) => e.t === "worlds");
 
   const inCountry = useMemo(() => events.filter((e) => e.co === country && e.t !== "worlds"), [events, country]);
-  // Region filter: FIRST regions for the USA, cities elsewhere
+  // Area filter (state / province / county / KZ city-region), only areas that have events + the user's own
   const regions = useMemo(() => {
-    const set = new Set(inCountry.map((e) => (country === "US" ? e.rg : e.city)).filter(Boolean));
-    return [...set].sort((a, b) => a.localeCompare(b));
-  }, [inCountry, country]);
+    const set = new Set(inCountry.map((e) => e.st).filter(Boolean));
+    if (homeArea) set.add(homeArea);
+    return [...set].map((code) => [code, areaName(country, code)] as const).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [inCountry, country, homeArea]);
 
   const list = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return inCountry
       .filter((e) => showAll || COMPETITION_KINDS.includes(e.t))
-      .filter((e) => !region || (country === "US" ? e.rg : e.city) === region)
-      .filter((e) => showPast || eventEnd(e) >= now)
+      .filter((e) => !region || inArea(e, region))
+      .filter((e) => showPast || now <= holdUntil(e))
       .filter((e) => !needle || `${e.n} ${e.city} ${e.st} ${e.c} ${e.v}`.toLowerCase().includes(needle))
       .sort((a, b) => eventStart(a) - eventStart(b));
     // `now` only matters at minute granularity here
@@ -95,14 +100,32 @@ export function Overview({ data }: WsProps) {
   // Resolve the selected event (persisted), else first upcoming in this country, else Worlds
   const selected: Selected | null = useMemo(() => {
     const other = OTHER_EVENTS.find((o) => o.id === selId);
-    if (other) return { kind: "other", id: other.id, name: other.name, ts: new Date(other.date).getTime() };
+    if (other && now <= new Date(other.date).getTime() + HOLD_MS)
+      return { kind: "other", id: other.id, name: other.name, ts: new Date(other.date).getTime() };
     if (!homeLoaded) return null;
-    // only the user's own country (or Worlds) can be selected
-    const saved = events.find((e) => e.c === selId && (e.co === country || e.t === "worlds"));
-    const ev = saved ?? list.find((e) => eventEnd(e) >= now) ?? worlds;
+    // only the user's own country (or Worlds), and only until a day after it started
+    const saved = events.find((e) => e.c === selId && (e.co === country || e.t === "worlds") && now <= holdUntil(e));
+    const live = (e: FtcEvent) => now <= holdUntil(e);
+    const ev =
+      saved ??
+      (homeArea ? list.find((e) => live(e) && inArea(e, homeArea)) : undefined) ??
+      list.find(live) ??
+      (worlds && live(worlds) ? worlds : undefined);
     return ev ? { kind: "ftc", ev } : null;
+    // re-evaluated every minute so expired events drop off automatically
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selId, events, list, worlds, country, homeLoaded]);
+  }, [selId, events, list, worlds, country, homeArea, homeLoaded, Math.floor(now / 60000)]);
+
+  // user's area first, then the rest of the country
+  const sections = useMemo(() => {
+    if (region || !homeArea) return [{ title: "", items: list }];
+    const near = list.filter((e) => inArea(e, homeArea));
+    const rest = list.filter((e) => !inArea(e, homeArea));
+    return [
+      { title: `Your area · ${areaName(country, homeArea)}`, items: near },
+      { title: `Rest of ${COUNTRIES.find((c) => c.code === country)!.name}`, items: rest },
+    ];
+  }, [list, region, homeArea, country]);
 
   // reset filters when the user's country changes
   useEffect(() => {
@@ -118,6 +141,8 @@ export function Overview({ data }: WsProps) {
 
   const target = selected ? (selected.kind === "ftc" ? eventStart(selected.ev) : selected.ts) : now;
   const diff = Math.max(0, target - now);
+  const holdEnd = selected ? (selected.kind === "ftc" ? holdUntil(selected.ev) : selected.ts + HOLD_MS) : now;
+  const hoursLeft = Math.max(1, Math.ceil((holdEnd - now) / 3600000));
   const parts = [
     ["Days", Math.floor(diff / 86400000)],
     ["Hrs", Math.floor(diff / 3600000) % 24],
@@ -159,7 +184,10 @@ export function Overview({ data }: WsProps) {
             <h2 className="text-2xl font-bold">{loading ? "Loading events…" : "Pick an event"}</h2>
           )}
           {diff === 0 && selected ? (
-            <p className="mt-10 text-4xl font-bold text-primary">Event day / completed</p>
+            <div className="mt-10">
+              <p className="text-4xl font-bold text-primary">It's on! Happening now</p>
+              <p className="mt-2 text-xs text-muted-foreground">Switches to the next event automatically in ~{hoursLeft} h.</p>
+            </div>
           ) : (
             <div className="mt-8 flex flex-wrap items-end gap-x-8 gap-y-4">
               {parts.map(([l, v], i) => (
@@ -193,16 +221,16 @@ export function Overview({ data }: WsProps) {
         {needsCountry ? (
           <div className="max-w-sm space-y-3">
             <p className="text-sm">Choose your country to see its FTC events. You can change it later in your profile.</p>
-            <CountryField value={draftCountry} onChange={setDraftCountry} />
+            <CountryField value={draftLoc} onChange={setDraftLoc} />
             <Button variant="hero" onClick={confirmCountry} disabled={savingCountry}>Show events</Button>
           </div>
         ) : (
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              FTC events · <span className="text-foreground">{meta.flag} {meta.name}</span>
+              FTC events · <span className="text-foreground">{meta.flag} {meta.name}{homeArea && <> · {areaName(country, homeArea)}</>}</span>
               {!loading && <> · {list.length} shown</>}
             </p>
-            <p className="text-[11px] text-muted-foreground">Change country in your profile</p>
+            <p className="text-[11px] text-muted-foreground">Change country / area in your profile</p>
           </div>
         )}
 
@@ -218,10 +246,10 @@ export function Overview({ data }: WsProps) {
                 value={region}
                 onChange={(e) => { setRegion(e.target.value); setLimit(PAGE); }}
                 className="h-9 rounded-md border border-input bg-background px-2 text-sm sm:w-56"
-                aria-label={country === "US" ? "Region" : "City"}
+                aria-label="Area"
               >
-                <option value="">{country === "US" ? "All regions" : "All cities"}</option>
-                {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+                <option value="">All of {meta.name}</option>
+                {regions.map(([code, name]) => <option key={code} value={code}>{name}{code === homeArea ? " (you)" : ""}</option>)}
               </select>
             )}
           </div>
@@ -235,7 +263,7 @@ export function Overview({ data }: WsProps) {
           </div>
 
           {worlds && (
-            <EventRow ev={worlds} active={selected?.kind === "ftc" && selected.ev.c === worlds.c} past={eventEnd(worlds) < now} onPick={pick} className="mt-4 border-b border-border pb-2" />
+            <EventRow ev={worlds} active={selected?.kind === "ftc" && selected.ev.c === worlds.c} past={now > holdUntil(worlds)} live={eventStart(worlds) <= now && now <= holdUntil(worlds)} onPick={pick} className="mt-4 border-b border-border pb-2" />
           )}
 
           <div className="mt-2">
@@ -246,13 +274,33 @@ export function Overview({ data }: WsProps) {
                 <p>{meta.note ?? (error ? "Couldn't load the event list." : "No events match these filters.")}</p>
               </div>
             ) : (
-              <ul>
-                {list.slice(0, limit).map((e) => (
-                  <li key={e.c}>
-                    <EventRow ev={e} active={selected?.kind === "ftc" && selected.ev.c === e.c} past={eventEnd(e) < now} onPick={pick} />
-                  </li>
-                ))}
-              </ul>
+              (() => {
+                let budget = limit;
+                return sections.map((sec) => {
+                  const shown = sec.items.slice(0, Math.max(0, budget));
+                  budget -= shown.length;
+                  if (!sec.title && shown.length === 0) return null;
+                  return (
+                    <div key={sec.title || "all"} className={sec.title ? "mt-3" : ""}>
+                      {sec.title && (
+                        <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-primary">
+                          {sec.title} · {sec.items.length}
+                        </p>
+                      )}
+                      {sec.title && sec.items.length === 0 && (
+                        <p className="py-2 pl-3 text-xs text-muted-foreground">No upcoming FTC events here yet.</p>
+                      )}
+                      <ul>
+                        {shown.map((e) => (
+                          <li key={e.c}>
+                            <EventRow ev={e} active={selected?.kind === "ftc" && selected.ev.c === e.c} past={now > holdUntil(e)} live={eventStart(e) <= now && now <= holdUntil(e)} onPick={pick} />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                });
+              })()
             )}
             {list.length > limit && (
               <button type="button" onClick={() => setLimit((l) => l + PAGE)} className="mt-2 w-full rounded-md border border-border py-2 text-sm text-muted-foreground hover:text-foreground">
@@ -271,11 +319,12 @@ export function Overview({ data }: WsProps) {
         )}
       </div>
 
-      {/* Team "other events" */}
+      {/* Team "other events" (each disappears a day after it starts) */}
+      {OTHER_EVENTS.some((o) => now <= new Date(o.date).getTime() + HOLD_MS) && (
       <div className="mt-6 rounded-md border border-border bg-background p-6">
         <p className="mb-2 border-b border-border pb-2 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Other events</p>
         <ul>
-          {OTHER_EVENTS.map((o) => {
+          {OTHER_EVENTS.filter((o) => now <= new Date(o.date).getTime() + HOLD_MS).map((o) => {
             const ts = new Date(o.date).getTime();
             return (
               <li key={o.id}>
@@ -296,6 +345,7 @@ export function Overview({ data }: WsProps) {
           })}
         </ul>
       </div>
+      )}
 
       <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border lg:grid-cols-4">
         {STATUSES.map((s) => (
@@ -311,7 +361,7 @@ export function Overview({ data }: WsProps) {
   );
 }
 
-function EventRow({ ev, active, past, onPick, className }: { ev: FtcEvent; active: boolean; past: boolean; onPick: (id: string) => void; className?: string }) {
+function EventRow({ ev, active, past, live, onPick, className }: { ev: FtcEvent; active: boolean; past: boolean; live?: boolean; onPick: (id: string) => void; className?: string }) {
   const start = eventStart(ev);
   return (
     <button
@@ -325,11 +375,14 @@ function EventRow({ ev, active, past, onPick, className }: { ev: FtcEvent; activ
       )}
     >
       <span className="min-w-0">
-        <span className="block truncate text-foreground">{ev.n}</span>
+        <span className="block truncate text-foreground">
+          {live && <span className="mr-1.5 rounded bg-primary px-1 py-0.5 font-mono text-[9px] font-bold uppercase text-primary-foreground">Live</span>}
+          {ev.n}
+        </span>
         <span className="block truncate text-xs">
           {KIND_LABEL[ev.t]}
           {place(ev) && <> · {place(ev)}</>}
-          {ev.co === "US" && ev.rg && <> · {ev.rg}</>}
+          {ev.co === "US" && ev.rg && ev.rg !== areaName("US", ev.st) && <> · {ev.rg}</>}
           {ev.src === "team" && <> · not in FIRST system yet</>}
         </span>
       </span>
