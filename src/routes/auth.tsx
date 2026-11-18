@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { TeamRoleField } from "@/components/TeamRoleField";
 import { CountryField, DEFAULT_COUNTRY, type HomeLocation } from "@/components/CountryField";
@@ -30,10 +30,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"in" | "up" | "forgot" | "reset">("in");
-  const [password2, setPassword2] = useState("");
-  // true while the user is setting a new password from a recovery link (don't auto-redirect to /app)
-  const recovering = useRef(false);
+  const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -42,77 +39,14 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    // Only a real recovery link from the email (one-time token in the URL hash) opens the new-password form.
-    // Supabase verifies that token; without it there is no recovery session and the form never shows.
-    const hash = new URLSearchParams(window.location.hash.slice(1));
-    if (hash.get("error_code") || hash.get("error")) {
-      toast.error("This reset link is invalid or has expired. Request a new one.");
-      setMode("forgot");
-    } else if (hash.get("type") === "recovery" && hash.get("access_token")) {
-      recovering.current = true; // block the auto-redirect while Supabase verifies the token
-    }
     supabase.auth.getSession().then(({ data }) => {
-      if (recovering.current && !data.session) {
-        recovering.current = false;
-        toast.error("This reset link is invalid or has expired. Request a new one.");
-        setMode("forgot");
-        return;
-      }
-      if (recovering.current && data.session) {
-        setMode("reset"); // valid recovery token from the email link
-        return;
-      }
       if (data.session) navigate({ to: "/app", replace: true });
     });
-    const { data } = supabase.auth.onAuthStateChange((event, s) => {
-      if (event === "PASSWORD_RECOVERY" && s) {
-        recovering.current = true;
-        setMode("reset");
-        return;
-      }
-      if (s && !recovering.current) navigate({ to: "/app", replace: true });
+    const { data } = supabase.auth.onAuthStateChange((_e, s) => {
+      if (s) navigate({ to: "/app", replace: true });
     });
     return () => data.subscription.unsubscribe();
   }, [navigate]);
-
-  async function sendReset(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: window.location.origin + "/auth",
-    });
-    setBusy(false);
-    if (error) {
-      if (/rate limit|too many|429/i.test(error.message)) toast.error("Too many requests. Please wait a bit and try again.");
-      else toast.error(error.message);
-      return;
-    }
-    // Same message whether or not the account exists (doesn't reveal registered emails)
-    toast.success("If an account with this email exists, we've sent a password reset link. Check your inbox and spam.");
-    setMode("in");
-  }
-
-  async function setNewPassword(e: React.FormEvent) {
-    e.preventDefault();
-    if (password.length < 6) { toast.error("Password must be at least 6 characters."); return; }
-    if (password !== password2) { toast.error("Passwords don't match."); return; }
-    if (!recovering.current) { toast.error("Open the reset link from your email first."); setMode("forgot"); return; }
-    setBusy(true);
-    const { data: s } = await supabase.auth.getSession();
-    if (!s.session) {
-      setBusy(false);
-      toast.error("This reset link is invalid or has expired. Request a new one.");
-      setMode("forgot");
-      return;
-    }
-    const { error } = await supabase.auth.updateUser({ password });
-    setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Password updated.");
-    recovering.current = false;
-    window.history.replaceState(null, "", "/auth");
-    navigate({ to: "/app", replace: true });
-  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -153,25 +87,7 @@ function AuthPage() {
       </Link>
       <div className="glass w-full max-w-md p-8">
         <Link to="/" aria-label="firstnote home" className="inline-block"><Logo className="h-10" /></Link>
-        <h1 className="mt-6 text-2xl font-semibold">
-          {mode === "in" ? "Welcome back" : mode === "up" ? "Join the team" : mode === "forgot" ? "Reset password" : "Set a new password"}
-        </h1>
-        {mode === "forgot" && (
-          <form onSubmit={sendReset} className="mt-6 space-y-4">
-            <p className="text-sm text-muted-foreground">Enter your account email and we'll send you a link to reset your password.</p>
-            <div className="space-y-1.5"><Label>Email</Label><Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></div>
-            <Button type="submit" variant="hero" className="w-full" disabled={busy}>Send reset link</Button>
-            <button type="button" className="w-full text-sm text-muted-foreground hover:text-foreground" onClick={() => setMode("in")}>Back to sign in</button>
-          </form>
-        )}
-        {mode === "reset" && (
-          <form onSubmit={setNewPassword} className="mt-6 space-y-4">
-            <div className="space-y-1.5"><Label>New password</Label><Input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" /></div>
-            <div className="space-y-1.5"><Label>Repeat new password</Label><Input type="password" required minLength={6} value={password2} onChange={(e) => setPassword2(e.target.value)} autoComplete="new-password" /></div>
-            <Button type="submit" variant="hero" className="w-full" disabled={busy}>Save password</Button>
-          </form>
-        )}
-        {(mode === "in" || mode === "up") && (<>
+        <h1 className="mt-6 text-2xl font-semibold">{mode === "in" ? "Welcome back" : "Join the team"}</h1>
         <form onSubmit={submit} className="mt-6 space-y-4">
           {mode === "up" && (
             <>
@@ -181,24 +97,13 @@ function AuthPage() {
             </>
           )}
           <div className="space-y-1.5"><Label>Email</Label><Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label>Password</Label>
-              {mode === "in" && (
-                <button type="button" className="text-xs text-muted-foreground hover:text-foreground" onClick={() => { setMode("forgot"); setPassword(""); }}>
-                  Forgot password?
-                </button>
-              )}
-            </div>
-            <Input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
-          </div>
+          <div className="space-y-1.5"><Label>Password</Label><Input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} /></div>
           <Button type="submit" variant="hero" className="w-full" disabled={busy}>{mode === "in" ? "Sign in" : "Create account"}</Button>
         </form>
         {GOOGLE_ENABLED && <Button variant="outline" className="mt-3 w-full" onClick={google}>Continue with Google</Button>}
         <button className="mt-6 w-full text-sm text-muted-foreground hover:text-foreground" type="button" onClick={() => { setMode(mode === "in" ? "up" : "in"); setPassword(""); }}>
           {mode === "in" ? "New here? Create an account" : "Already have an account? Sign in"}
         </button>
-        </>)}
       </div>
     </div>
   );
