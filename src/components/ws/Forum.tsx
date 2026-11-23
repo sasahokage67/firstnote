@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Flag } from "@/components/Flag";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Heart, MessageCircle, Trash2, Globe2, ArrowUp } from "lucide-react";
@@ -6,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { Profile } from "@/hooks/use-workspace-data";
 import { useHomeCountry } from "@/components/CountryField";
-import { COUNTRIES, type CountryCode } from "@/lib/events";
 import { POST_MAX, loadFeed, type Feed, type ForumPost } from "@/lib/forum";
 import { useI18n, type TFn } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -24,7 +24,6 @@ function ago(iso: string, locale: string, t: TFn) {
   return new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "short" });
 }
 
-const flagOf = (co: CountryCode | null) => (co ? COUNTRIES.find((c) => c.code === co)?.flag ?? "" : "");
 
 export function Forum({ userId, me }: { userId: string; me: Profile | null }) {
   const { t } = useI18n();
@@ -68,7 +67,6 @@ export function Forum({ userId, me }: { userId: string; me: Profile | null }) {
     if (error) toast.error(error.message); else refresh();
   }
 
-  const myFlag = flagOf(home.country);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -83,7 +81,7 @@ export function Forum({ userId, me }: { userId: string; me: Profile | null }) {
               <button key={s} type="button" onClick={() => setScope(s)}
                 className={cn("flex items-center gap-1.5 rounded-full px-3 py-1 transition-colors",
                   scope === s ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground")}>
-                {s === "all" ? <><Globe2 className="size-3.5" /> {t("fr.everyone")}</> : <>{myFlag} {t(`country.${home.country!}`)}</>}
+                {s === "all" ? <><Globe2 className="size-3.5" /> {t("fr.everyone")}</> : <><Flag code={home.country} /> {t(`country.${home.country!}`)}</>}
               </button>
             ))}
           </div>
@@ -188,7 +186,7 @@ function PostCard({ post, feed, userId, me, onLike, onDelete, onReply }: {
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5 text-sm">
             <span className="truncate font-semibold">{author?.full_name || t("common.unknown")}</span>
-            {post.co && <span title={t(`country.${post.co}`)}>{flagOf(post.co)}</span>}
+            {post.co && <span title={t(`country.${post.co}`)} className="self-center"><Flag code={post.co} /></span>}
             {author?.team_role && <span className="hidden truncate text-muted-foreground sm:inline">{author.team_role}</span>}
             <span className="ml-auto shrink-0 text-xs text-muted-foreground">{ago(post.created_at, locale, t)}</span>
           </div>

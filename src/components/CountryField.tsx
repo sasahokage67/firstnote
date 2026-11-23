@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Flag } from "@/components/Flag";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { COUNTRIES, type CountryCode } from "@/lib/events";
@@ -29,7 +30,7 @@ export function CountryField({ value, onChange }: { value: HomeLocation; onChang
           <SelectTrigger aria-label="Choose country"><SelectValue /></SelectTrigger>
           <SelectContent>
             {COUNTRIES.map((c) => (
-              <SelectItem key={c.code} value={c.code}>{c.flag} {t(`country.${c.code}`)}</SelectItem>
+              <SelectItem key={c.code} value={c.code}><span className="flex items-center gap-2"><Flag code={c.code} />{t(`country.${c.code}`)}</span></SelectItem>
             ))}
           </SelectContent>
         </Select>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Flag } from "@/components/Flag";
 import { MapPin, Search } from "lucide-react";
 import { OTHER_EVENTS, readiness, STATUSES } from "@/lib/ftc";
 import {
@@ -169,7 +170,7 @@ export function Overview({ data }: WsProps) {
             <>
               <p className="flex flex-wrap gap-x-4 text-xs text-primary tabular-nums font-medium">
                 <span>{t(`kind.${selected.ev.t}`)}</span>
-                <span>{COUNTRIES.find((c) => c.code === selected.ev.co)?.flag} {place(selected.ev) || t(`country.${selected.ev.co}`)}</span>
+                <span className="inline-flex items-center gap-1.5"><Flag code={selected.ev.co} /> {place(selected.ev) || t(`country.${selected.ev.co}`)}</span>
               </p>
               <h2 className="mt-2 text-2xl font-bold md:text-3xl">{selected.ev.n}</h2>
               <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
@@ -238,7 +239,7 @@ export function Overview({ data }: WsProps) {
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs text-muted-foreground tabular-nums font-medium">
               <span>{t("ov.ftcEvents")}</span>
-              <span className="text-foreground">{meta.flag} {countryName}{homeArea && <>, {areaNameIn(lang, country, homeArea)}</>}</span>
+              <span className="inline-flex items-center gap-1.5 text-foreground"><Flag code={country} /> {countryName}{homeArea && <>, {areaNameIn(lang, country, homeArea)}</>}</span>
               {!loading && <span>{t("ov.shown", { n: list.length })}</span>}
             </p>
             <p className="text-[11px] text-muted-foreground">{t("ov.changeInProfile")}</p>
