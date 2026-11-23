@@ -559,10 +559,10 @@ export function LanguageSwitcher({ className }: { className?: string }) {
           key={l}
           type="button"
           onClick={() => set(l)}
-          className={cn("px-2 py-1 font-mono uppercase transition", lang === l ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+          className={cn("px-2 py-1 text-xs font-medium transition", lang === l ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
           aria-pressed={lang === l}
         >
-          {l}
+          {l.toUpperCase()}
         </button>
       ))}
     </div>

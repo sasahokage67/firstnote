@@ -53,7 +53,7 @@ export function Board({ wsId, data }: WsProps) {
               className={cn("glass min-h-64 p-3 transition", over === s.id && "border-primary")}>
               <div className="mb-3 flex items-center justify-between px-1">
                 <h3 className="font-semibold">{t(`status.${s.id}`)}</h3>
-                <span className="font-mono text-xs text-muted-foreground">{col.length}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">{col.length}</span>
               </div>
               <div className="space-y-2">
                 {col.map((x) => (

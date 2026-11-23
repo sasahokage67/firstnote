@@ -188,7 +188,7 @@ export function TaskCard({ t, data, wsId }: { t: Task; data: WsData; wsId: strin
             <MemberAvatar p={assignee} className="size-6" />
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <span className="rounded bg-primary/15 px-1.5 py-0.5 font-mono text-[10px] uppercase text-primary">{tryT(tr, "cat", t.category)}</span>
+            <span className="rounded bg-primary/15 px-1.5 py-0.5 text-xs text-primary tabular-nums font-medium">{tryT(tr, "cat", t.category)}</span>
             {award && <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground">{award.name.replace(/ Award.*/, "")}</span>}
           </div>
         </button>

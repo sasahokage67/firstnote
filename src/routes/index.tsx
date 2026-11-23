@@ -47,7 +47,7 @@ function Landing() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl py-20">
-        <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">{t("landing.kicker")}</p>
+        <p className="text-xs text-primary tabular-nums font-medium">{t("landing.kicker")}</p>
         <h1 className="mt-4 max-w-3xl text-5xl font-bold leading-[1.05] md:text-7xl">
           {t("landing.title1")}<span className="text-gradient">FTC</span>{t("landing.title2")}
         </h1>

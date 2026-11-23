@@ -143,7 +143,7 @@ function Workspace({ wsId, userId, profile, workspaces, onSwitch, onNew, onSignO
                   <MemberAvatar p={profile} />
                   <span className="hidden text-left leading-tight sm:block">
                     <span className="block text-sm font-medium">{profile?.full_name}</span>
-                    <span className="block text-[10px] uppercase tracking-widest text-primary">{profile?.team_role ? tryT(t, "role", profile.team_role) : ""}</span>
+                    <span className="block text-xs text-primary font-medium">{profile?.team_role ? tryT(t, "role", profile.team_role) : ""}</span>
                   </span>
                 </button>
               </DropdownMenuTrigger>

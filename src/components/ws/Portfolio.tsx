@@ -23,14 +23,14 @@ export function Portfolio({ data }: WsProps) {
     <div>
       <SectionTitle title={t("pf.title")} sub={t("pf.sub")} />
       <div className="glass mb-4 p-5">
-        <div className="flex justify-between text-sm"><span>{t("pf.ready", { ready, total })}</span><span className="font-mono">{Math.round((ready / total) * 100)}%</span></div>
+        <div className="flex justify-between text-sm"><span>{t("pf.ready", { ready, total })}</span><span className="tabular-nums">{Math.round((ready / total) * 100)}%</span></div>
         <Progress value={(ready / total) * 100} className="mt-2 h-2" />
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {data.pages.map((p) => (
           <div key={p.id} className="glass space-y-3 p-4">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-xs text-primary">{t("pf.page")} {String(p.page_number).padStart(2, "0")}</span>
+              <span className="text-xs text-primary tabular-nums">{t("pf.page")} {String(p.page_number).padStart(2, "0")}</span>
               <StatusPill status={p.status} label={PAGE_STATUSES.some((s) => s.id === p.status) ? t(`page.${p.status as (typeof PAGE_STATUSES)[number]["id"]}`) : ""} />
             </div>
             <Input defaultValue={p.title} key={p.title} className="font-semibold"

@@ -167,7 +167,7 @@ export function Overview({ data }: WsProps) {
         <div className="bg-background p-6 lg:col-span-2">
           {selected?.kind === "ftc" ? (
             <>
-              <p className="flex flex-wrap gap-x-4 font-mono text-[11px] uppercase tracking-[0.2em] text-primary">
+              <p className="flex flex-wrap gap-x-4 text-xs text-primary tabular-nums font-medium">
                 <span>{t(`kind.${selected.ev.t}`)}</span>
                 <span>{COUNTRIES.find((c) => c.code === selected.ev.co)?.flag} {place(selected.ev) || t(`country.${selected.ev.co}`)}</span>
               </p>
@@ -187,7 +187,7 @@ export function Overview({ data }: WsProps) {
             </>
           ) : selected?.kind === "other" ? (
             <>
-              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">{t("ov.otherEvent", { time: formatIn(selected.ts, homeTz, true, locale) })}</p>
+              <p className="text-xs text-primary tabular-nums font-medium">{t("ov.otherEvent", { time: formatIn(selected.ts, homeTz, true, locale) })}</p>
               <h2 className="mt-2 text-2xl font-bold md:text-3xl">{selected.name}</h2>
             </>
           ) : (
@@ -202,10 +202,10 @@ export function Overview({ data }: WsProps) {
             <div className="mt-8 flex flex-wrap items-end gap-x-8 gap-y-4">
               {parts.map(([l, v], i) => (
                 <div key={l}>
-                  <p className={cn("font-mono text-5xl font-bold tabular-nums leading-none md:text-7xl", i === 0 && "text-primary")}>
+                  <p className={cn("text-5xl font-bold tabular-nums leading-none md:text-7xl", i === 0 && "text-primary")}>
                     {String(v).padStart(2, "0")}
                   </p>
-                  <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{l}</p>
+                  <p className="mt-2 text-xs text-muted-foreground tabular-nums font-medium">{l}</p>
                 </div>
               ))}
             </div>
@@ -217,7 +217,7 @@ export function Overview({ data }: WsProps) {
           )}
         </div>
         <div className="flex flex-col justify-between bg-background p-6">
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("ov.readiness")}</p>
+          <p className="text-xs text-muted-foreground tabular-nums font-medium">{t("ov.readiness")}</p>
           <p className="my-6 font-display text-7xl font-bold leading-none">{pct}<span className="text-primary">%</span></p>
           <div className="h-2 w-full bg-muted">
             <div className="h-full bg-primary transition-all duration-700" style={{ width: `${pct}%` }} />
@@ -236,7 +236,7 @@ export function Overview({ data }: WsProps) {
           </div>
         ) : (
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs text-muted-foreground tabular-nums font-medium">
               <span>{t("ov.ftcEvents")}</span>
               <span className="text-foreground">{meta.flag} {countryName}{homeArea && <>, {areaNameIn(lang, country, homeArea)}</>}</span>
               {!loading && <span>{t("ov.shown", { n: list.length })}</span>}
@@ -294,7 +294,7 @@ export function Overview({ data }: WsProps) {
                   return (
                     <div key={sec.title || "all"} className={sec.title ? "mt-3" : ""}>
                       {sec.title && (
-                        <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-primary">
+                        <p className="mb-1 text-xs text-primary tabular-nums font-medium">
                           {sec.title} <span className="ml-1.5 text-muted-foreground">{sec.items.length}</span>
                         </p>
                       )}
@@ -333,7 +333,7 @@ export function Overview({ data }: WsProps) {
       {/* Team "other events" (each disappears a day after it starts) */}
       {OTHER_EVENTS.some((o) => now <= new Date(o.date).getTime() + HOLD_MS) && (
       <div className="mt-6 rounded-md border border-border bg-background p-6">
-        <p className="mb-2 border-b border-border pb-2 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("ov.otherEvents")}</p>
+        <p className="mb-2 border-b border-border pb-2 text-xs text-muted-foreground tabular-nums font-medium">{t("ov.otherEvents")}</p>
         <ul>
           {OTHER_EVENTS.filter((o) => now <= new Date(o.date).getTime() + HOLD_MS).map((o) => {
             const ts = new Date(o.date).getTime();
@@ -349,7 +349,7 @@ export function Overview({ data }: WsProps) {
                   )}
                 >
                   <span className="truncate">{o.name}</span>
-                  <span className="shrink-0 font-mono text-xs">{formatIn(ts, homeTz, true, locale)}</span>
+                  <span className="shrink-0 text-xs tabular-nums">{formatIn(ts, homeTz, true, locale)}</span>
                 </button>
               </li>
             );
@@ -361,7 +361,7 @@ export function Overview({ data }: WsProps) {
       <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border lg:grid-cols-4">
         {STATUSES.map((s) => (
           <div key={s.id} className="bg-background p-5">
-            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{s.name}</p>
+            <p className="text-xs text-muted-foreground tabular-nums font-medium">{s.name}</p>
             <p className={cn("mt-2 font-display text-4xl font-bold", s.id === "done" && "text-primary")}>
               {data.tasks.filter((t) => t.status === s.id).length}
             </p>
@@ -393,7 +393,7 @@ function EventRow({ ev, active, past, live, onPick, className, t, locale, homeTz
     >
       <span className="min-w-0">
         <span className="block truncate text-foreground">
-          {live && <span className="mr-1.5 rounded bg-primary px-1 py-0.5 font-mono text-[9px] font-bold uppercase text-primary-foreground">{t("ov.liveBadge")}</span>}
+          {live && <span className="mr-1.5 rounded bg-primary px-1 py-0.5 text-xs font-bold text-primary-foreground tabular-nums">{t("ov.liveBadge")}</span>}
           {ev.n}
         </span>
         <span className="flex gap-x-3 truncate text-xs">
@@ -403,7 +403,7 @@ function EventRow({ ev, active, past, live, onPick, className, t, locale, homeTz
           {ev.src === "team" && <span className="truncate">{t("ov.notInFirst")}</span>}
         </span>
       </span>
-      <span className="shrink-0 text-right font-mono text-xs">
+      <span className="shrink-0 text-right text-xs tabular-nums">
         <span className="block">{dateRange(ev, locale)}</span>
         <span className="block text-[10px] text-muted-foreground">
           {clockIn(start, ev.tz, locale)} {evGmt}

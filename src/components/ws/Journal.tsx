@@ -59,7 +59,7 @@ export function Journal({ wsId, userId, data }: WsProps) {
                     <MemberAvatar p={a} />
                     <div>
                       <h3 className="font-semibold">{j.title}</h3>
-                      <p className="text-xs text-muted-foreground">{a?.full_name ?? t("common.unknown")}<span className="ml-2 font-mono">{new Date(j.entry_date + "T00:00:00Z").toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</span></p>
+                      <p className="text-xs text-muted-foreground">{a?.full_name ?? t("common.unknown")}<span className="ml-2 tabular-nums">{new Date(j.entry_date + "T00:00:00Z").toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</span></p>
                     </div>
                   </div>
                   {j.author_id === userId && (
@@ -101,26 +101,26 @@ function MatchScorer({ wsId, data }: WsProps) {
         {(["auto", "teleop", "endgame"] as const).map((k) => (
           <div key={k} className="flex items-center justify-between gap-3">
             <span className="text-sm font-medium">{t(`ms.${k}`)}</span>
-            <Input type="number" inputMode="numeric" min={0} className="w-28 text-right font-mono" value={s[k]} onFocus={(e) => e.target.select()}
+            <Input type="number" inputMode="numeric" min={0} className="w-28 text-right tabular-nums" value={s[k]} onFocus={(e) => e.target.select()}
               onChange={(e) => setS({ ...s, [k]: Math.max(0, Number(e.target.value) || 0) })} />
           </div>
         ))}
         <div className="flex items-center justify-between border-t border-border pt-4">
           <span className="text-sm text-muted-foreground">{t("ms.total")}</span>
-          <span className="font-mono text-3xl font-bold text-primary">{total}</span>
+          <span className="text-3xl font-bold text-primary tabular-nums">{total}</span>
         </div>
         <Button variant="hero" className="w-full" onClick={save}>{t("ms.save")}</Button>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="glass p-4"><p className="text-xs uppercase tracking-widest text-muted-foreground">{t("ms.high")}</p><p className="font-mono text-2xl font-bold">{stats.high}</p></div>
-        <div className="glass p-4"><p className="text-xs uppercase tracking-widest text-muted-foreground">{t("ms.avg")}</p><p className="font-mono text-2xl font-bold">{stats.average}</p></div>
+        <div className="glass p-4"><p className="text-xs text-muted-foreground font-medium">{t("ms.high")}</p><p className="text-2xl font-bold tabular-nums">{stats.high}</p></div>
+        <div className="glass p-4"><p className="text-xs text-muted-foreground font-medium">{t("ms.avg")}</p><p className="text-2xl font-bold tabular-nums">{stats.average}</p></div>
       </div>
       <div className="glass mt-4 divide-y divide-border">
         {data.matches.length === 0 && <p className="px-4 py-6 text-center text-sm text-muted-foreground">{t("ms.empty")}</p>}
         {[...data.matches].reverse().map((m) => (
           <div key={m.id} className="flex items-center justify-between px-4 py-2 text-sm">
             <span>{m.label}</span>
-            <span className="flex items-center gap-1 font-mono text-muted-foreground">
+            <span className="flex items-center gap-1 text-muted-foreground tabular-nums">
               {m.auto_score}/{m.teleop_score}/{m.endgame_score} <b className="ml-1 text-foreground">{m.auto_score + m.teleop_score + m.endgame_score}</b>
               <Button size="icon" variant="ghost" className="size-7" aria-label={t("ms.deleteMatch")}
                 onClick={() => removeRow(t, "matches", m.id, m.label, () => data.refresh("matches"))}><Trash2 className="size-3.5" /></Button>

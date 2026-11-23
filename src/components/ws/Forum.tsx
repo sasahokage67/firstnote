@@ -153,7 +153,7 @@ function Composer({ me, onPost, compact, placeholder }: {
         />
         <div className={cn("flex items-center justify-end gap-3", !compact && "mt-2 border-t border-border pt-3")}>
           {text.length > 0 && (
-            <span className={cn("font-mono text-xs tabular-nums", left < 0 ? "text-destructive" : left <= 20 ? "text-amber-400" : "text-muted-foreground")}>
+            <span className={cn("text-xs tabular-nums", left < 0 ? "text-destructive" : left <= 20 ? "text-amber-400" : "text-muted-foreground")}>
               {left}
             </span>
           )}

@@ -6,7 +6,7 @@ export function Roster({ data, inviteCode }: WsProps & { inviteCode: string }) {
   return (
     <div>
       <SectionTitle title={t("rs.title")} sub={t("rs.sub")}
-        action={<div className="glass px-4 py-2 text-sm">{t("rs.invite")} <span className="font-mono font-bold text-primary">{inviteCode}</span></div>} />
+        action={<div className="glass px-4 py-2 text-sm">{t("rs.invite")} <span className="font-bold text-primary tabular-nums">{inviteCode}</span></div>} />
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {data.members.map((m) => {
           const mine = data.tasks.filter((x) => x.assignee_id === m.id);
@@ -17,9 +17,9 @@ export function Roster({ data, inviteCode }: WsProps & { inviteCode: string }) {
               <MemberAvatar p={m} className="size-12" />
               <div className="flex-1">
                 <p className="font-semibold">{m.full_name}</p>
-                <p className="text-xs uppercase tracking-widest text-primary">{tryT(t, "role", m.team_role)}</p>
+                <p className="text-xs text-primary font-medium">{tryT(t, "role", m.team_role)}</p>
               </div>
-              <div className="text-right font-mono text-xs text-muted-foreground">
+              <div className="text-right text-xs text-muted-foreground tabular-nums">
                 <p><b className="text-foreground">{open}</b> {t("rs.open")}</p>
                 <p>{mine.length - open} {t("rs.done")}</p>
                 <p>{pages} {t("rs.pages")}</p>
