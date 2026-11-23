@@ -61,7 +61,11 @@ function AuthPage() {
           options: { emailRedirectTo: window.location.origin + "/app", data: { full_name: name, team_role: role, country: loc.country, area: loc.area } },
         });
         if (error) throw error;
-        if (!data.session) toast.success(t("auth.checkEmail"));
+        if (!data.session) {
+          // Accounts are confirmed on sign-up, so sign straight in; fall back to the email hint.
+          const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+          if (signInError) toast.success(t("auth.checkEmail"));
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
