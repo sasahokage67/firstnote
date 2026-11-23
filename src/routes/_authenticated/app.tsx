@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Check, LogOut, Plus, LayoutDashboard, Trophy, KanbanSquare, BookOpen, FileText, Users, UserCog } from "lucide-react";
+import { ArrowLeft, Check, LogOut, Plus, LayoutDashboard, Trophy, KanbanSquare, BookOpen, FileText, Users, UserCog, MessagesSquare } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { TeamRoleField } from "@/components/TeamRoleField";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,7 @@ import { Board } from "@/components/ws/Board";
 import { Journal } from "@/components/ws/Journal";
 import { Portfolio } from "@/components/ws/Portfolio";
 import { Roster } from "@/components/ws/Roster";
+import { Forum } from "@/components/ws/Forum";
 import { CountryField, DEFAULT_COUNTRY, saveHomeCountry, useHomeCountry, type HomeLocation } from "@/components/CountryField";
 
 
@@ -40,6 +41,7 @@ export const Route = createFileRoute("/_authenticated/app")({
 
 const TABS = [
   { id: "overview", icon: LayoutDashboard },
+  { id: "forum", icon: MessagesSquare },
   { id: "awards", icon: Trophy },
   { id: "board", icon: KanbanSquare },
   { id: "journal", icon: BookOpen },
@@ -175,6 +177,7 @@ function Workspace({ wsId, userId, profile, workspaces, onSwitch, onNew, onSignO
       </header>
       <main className="mx-auto max-w-7xl px-4 py-8">
         {tab === "overview" && <Overview {...props} />}
+        {tab === "forum" && <Forum userId={userId} me={profile} />}
         {tab === "awards" && <Awards {...props} />}
         {tab === "board" && <Board {...props} />}
         {tab === "journal" && <Journal {...props} />}

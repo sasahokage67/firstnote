@@ -27,7 +27,7 @@ export type FtcEvent = {
   src?: "first" | "ustem" | "team";
 };
 
-export type CountryCode = "KZ" | "US" | "CA" | "RO" | "TH" | "BR";
+export type CountryCode = "KZ" | "US" | "CA" | "RO" | "TH" | "BR" | "GR" | "JM";
 
 export const COUNTRIES: { code: CountryCode; name: string; flag: string; note?: string; links?: { label: string; href: string }[] }[] = [
   { code: "KZ", name: "Kazakhstan", flag: "🇰🇿", links: [{ label: "USTEM Connect", href: "https://connect.ustem.kz/events?program=FTC" }] },
@@ -45,6 +45,8 @@ export const COUNTRIES: { code: CountryCode; name: string; flag: string; note?: 
     ],
   },
   { code: "BR", name: "Brazil", flag: "🇧🇷" },
+  { code: "GR", name: "Greece", flag: "🇬🇷" },
+  { code: "JM", name: "Jamaica", flag: "🇯🇲" },
 ];
 
 export const KIND_LABEL: Record<EventKind, string> = {

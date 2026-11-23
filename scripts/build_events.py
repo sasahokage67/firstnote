@@ -5,7 +5,7 @@ from datetime import datetime
 raw = json.load(open(sys.argv[1]))
 out_path = sys.argv[2]
 
-COUNTRIES = {"USA": "US", "Canada": "CA", "Romania": "RO", "Brazil": "BR", "Kazakhstan": "KZ", "Thailand": "TH"}
+COUNTRIES = {"USA": "US", "Canada": "CA", "Romania": "RO", "Brazil": "BR", "Kazakhstan": "KZ", "Thailand": "TH", "Greece": "GR", "Jamaica": "JM"}
 
 US_TZ = {
     **dict.fromkeys("CT DE DC FL GA IN KY ME MD MA MI NH NJ NY NC OH PA RI SC VT VA WV PR".split(), "America/New_York"),
@@ -66,6 +66,10 @@ def tz_for(co, st, city):
         return "Europe/Bucharest"
     if co == "KZ":
         return "Asia/Qyzylorda"  # Kazakhstan is a single UTC+5 zone since 2024
+    if co == "GR":
+        return "Europe/Athens"
+    if co == "JM":
+        return "America/Jamaica"
     if co == "TH":
         return "Asia/Bangkok"
     return "UTC"

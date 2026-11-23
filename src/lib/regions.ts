@@ -41,10 +41,20 @@ export const AREAS: Record<CountryCode, Record<string, string>> = {
     RJ: "Rio de Janeiro", RN: "Rio Grande do Norte", RS: "Rio Grande do Sul", RO: "Rondônia", RR: "Roraima",
     SC: "Santa Catarina", SP: "São Paulo", SE: "Sergipe", TO: "Tocantins",
   },
+  GR: {
+    I: "Attica (Athens)", B: "Central Macedonia (Thessaloniki)", A: "East Macedonia and Thrace", C: "West Macedonia",
+    D: "Epirus", E: "Thessaly", F: "Ionian Islands", G: "West Greece", H: "Central Greece", J: "Peloponnese",
+    K: "North Aegean", L: "South Aegean", M: "Crete",
+  },
+  JM: {
+    "01": "Kingston", "02": "St. Andrew", "03": "St. Thomas", "04": "Portland", "05": "St. Mary", "06": "St. Ann",
+    "07": "Trelawny", "08": "St. James", "09": "Hanover", "10": "Westmoreland", "11": "St. Elizabeth",
+    "12": "Manchester", "13": "Clarendon", "14": "St. Catherine",
+  },
 };
 
 export const AREA_LABEL: Record<CountryCode, string> = {
-  KZ: "City / region", US: "State", CA: "Province", RO: "County (județ)", TH: "Province", BR: "State",
+  KZ: "City / region", US: "State", CA: "Province", RO: "County (județ)", TH: "Province", BR: "State", GR: "Region", JM: "Parish",
 };
 
 /** Cities that belong to an area even when FIRST files them under another code (e.g. Semey is now in Abai Region). */
@@ -53,6 +63,7 @@ const AREA_CITIES: Partial<Record<string, string[]>> = {
   "KZ:ABA": ["Semey"],
   "KZ:VOS": ["Oskemen", "Ust-Kamenogorsk"],
   "KZ:ZHT": ["Taldykorgan"],
+  "JM:01": ["Kingston"],
 };
 
 export function areaName(co: CountryCode, code: string | null | undefined): string {
@@ -108,6 +119,7 @@ const BR_TZ: Record<string, string> = {
 };
 const COUNTRY_TZ: Record<CountryCode, string> = {
   KZ: "Asia/Qyzylorda", RO: "Europe/Bucharest", TH: "Asia/Bangkok", US: "America/New_York", CA: "America/Toronto", BR: "America/Sao_Paulo",
+  GR: "Europe/Athens", JM: "America/Jamaica",
 };
 
 /**
