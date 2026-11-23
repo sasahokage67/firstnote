@@ -59,7 +59,7 @@ export function Journal({ wsId, userId, data }: WsProps) {
                     <MemberAvatar p={a} />
                     <div>
                       <h3 className="font-semibold">{j.title}</h3>
-                      <p className="text-xs text-muted-foreground">{a?.full_name ?? t("common.unknown")} · <span className="font-mono">{new Date(j.entry_date + "T00:00:00Z").toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</span></p>
+                      <p className="text-xs text-muted-foreground">{a?.full_name ?? t("common.unknown")}<span className="ml-2 font-mono">{new Date(j.entry_date + "T00:00:00Z").toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</span></p>
                     </div>
                   </div>
                   {j.author_id === userId && (
@@ -121,7 +121,7 @@ function MatchScorer({ wsId, data }: WsProps) {
           <div key={m.id} className="flex items-center justify-between px-4 py-2 text-sm">
             <span>{m.label}</span>
             <span className="flex items-center gap-1 font-mono text-muted-foreground">
-              {m.auto_score}/{m.teleop_score}/{m.endgame_score} · <b className="text-foreground">{m.auto_score + m.teleop_score + m.endgame_score}</b>
+              {m.auto_score}/{m.teleop_score}/{m.endgame_score} <b className="ml-1 text-foreground">{m.auto_score + m.teleop_score + m.endgame_score}</b>
               <Button size="icon" variant="ghost" className="size-7" aria-label={t("ms.deleteMatch")}
                 onClick={() => removeRow(t, "matches", m.id, m.label, () => data.refresh("matches"))}><Trash2 className="size-3.5" /></Button>
             </span>

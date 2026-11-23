@@ -167,15 +167,15 @@ export function Overview({ data }: WsProps) {
         <div className="bg-background p-6 lg:col-span-2">
           {selected?.kind === "ftc" ? (
             <>
-              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">
-                {t(`kind.${selected.ev.t}`)} · {COUNTRIES.find((c) => c.code === selected.ev.co)?.flag}{" "}
-                {place(selected.ev) || t(`country.${selected.ev.co}`)}
+              <p className="flex flex-wrap gap-x-4 font-mono text-[11px] uppercase tracking-[0.2em] text-primary">
+                <span>{t(`kind.${selected.ev.t}`)}</span>
+                <span>{COUNTRIES.find((c) => c.code === selected.ev.co)?.flag} {place(selected.ev) || t(`country.${selected.ev.co}`)}</span>
               </p>
               <h2 className="mt-2 text-2xl font-bold md:text-3xl">{selected.ev.n}</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {dateRange(selected.ev, locale)} · {t("ov.starts", { time: formatIn(target, selected.ev.tz, true, locale), gmt: gmtLabel(target, selected.ev.tz) })}
+              <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <span>{dateRange(selected.ev, locale)}</span>
+                <span>{t("ov.starts", { time: formatIn(target, selected.ev.tz, true, locale), gmt: gmtLabel(target, selected.ev.tz) })}</span>
                 <span className="text-foreground">
-                  {" · "}
                   {t("ov.yourTime", { place: homePlace ? ` (${homePlace})` : "", time: formatIn(target, homeTz, true, locale) })}
                 </span>
               </p>
@@ -236,9 +236,10 @@ export function Overview({ data }: WsProps) {
           </div>
         ) : (
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              {t("ov.ftcEvents")} · <span className="text-foreground">{meta.flag} {countryName}{homeArea && <> · {areaNameIn(lang, country, homeArea)}</>}</span>
-              {!loading && <> · {t("ov.shown", { n: list.length })}</>}
+            <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              <span>{t("ov.ftcEvents")}</span>
+              <span className="text-foreground">{meta.flag} {countryName}{homeArea && <>, {areaNameIn(lang, country, homeArea)}</>}</span>
+              {!loading && <span>{t("ov.shown", { n: list.length })}</span>}
             </p>
             <p className="text-[11px] text-muted-foreground">{t("ov.changeInProfile")}</p>
           </div>
@@ -294,7 +295,7 @@ export function Overview({ data }: WsProps) {
                     <div key={sec.title || "all"} className={sec.title ? "mt-3" : ""}>
                       {sec.title && (
                         <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-primary">
-                          {sec.title} · {sec.items.length}
+                          {sec.title} <span className="ml-1.5 text-muted-foreground">{sec.items.length}</span>
                         </p>
                       )}
                       {sec.title && sec.items.length === 0 && (
@@ -395,18 +396,18 @@ function EventRow({ ev, active, past, live, onPick, className, t, locale, homeTz
           {live && <span className="mr-1.5 rounded bg-primary px-1 py-0.5 font-mono text-[9px] font-bold uppercase text-primary-foreground">{t("ov.liveBadge")}</span>}
           {ev.n}
         </span>
-        <span className="block truncate text-xs">
-          {t(`kind.${ev.t}`)}
-          {place(ev) && <> · {place(ev)}</>}
-          {ev.co === "US" && ev.rg && ev.rg !== areaNameIn("en", "US", ev.st) && <> · {ev.rg}</>}
-          {ev.src === "team" && <> · {t("ov.notInFirst")}</>}
+        <span className="flex gap-x-3 truncate text-xs">
+          <span className="shrink-0">{t(`kind.${ev.t}`)}</span>
+          {place(ev) && <span className="truncate">{place(ev)}</span>}
+          {ev.co === "US" && ev.rg && ev.rg !== areaNameIn("en", "US", ev.st) && <span className="truncate">{ev.rg}</span>}
+          {ev.src === "team" && <span className="truncate">{t("ov.notInFirst")}</span>}
         </span>
       </span>
       <span className="shrink-0 text-right font-mono text-xs">
         <span className="block">{dateRange(ev, locale)}</span>
         <span className="block text-[10px] text-muted-foreground">
           {clockIn(start, ev.tz, locale)} {evGmt}
-          {!sameZone && <> · <span className="text-foreground">{clockIn(start, homeTz, locale)} {t("ov.yours")}</span></>}
+          {!sameZone && <span className="ml-2 text-foreground">{clockIn(start, homeTz, locale)} {t("ov.yours")}</span>}
         </span>
       </span>
     </button>

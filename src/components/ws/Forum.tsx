@@ -189,8 +189,8 @@ function PostCard({ post, feed, userId, me, onLike, onDelete, onReply }: {
           <div className="flex items-baseline gap-1.5 text-sm">
             <span className="truncate font-semibold">{author?.full_name || t("common.unknown")}</span>
             {post.co && <span title={t(`country.${post.co}`)}>{flagOf(post.co)}</span>}
-            {author?.team_role && <span className="hidden truncate text-muted-foreground sm:inline">· {author.team_role}</span>}
-            <span className="shrink-0 text-muted-foreground">· {ago(post.created_at, locale, t)}</span>
+            {author?.team_role && <span className="hidden truncate text-muted-foreground sm:inline">{author.team_role}</span>}
+            <span className="ml-auto shrink-0 text-xs text-muted-foreground">{ago(post.created_at, locale, t)}</span>
           </div>
           <p className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-relaxed">{post.content}</p>
 
@@ -222,7 +222,7 @@ function PostCard({ post, feed, userId, me, onLike, onDelete, onReply }: {
                     <MemberAvatar p={a} className="size-7" />
                     <div className="min-w-0 flex-1 text-sm">
                       <span className="font-semibold">{a?.full_name || t("common.unknown")}</span>
-                      <span className="text-muted-foreground"> · {ago(r.created_at, locale, t)}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">{ago(r.created_at, locale, t)}</span>
                       <p className="whitespace-pre-wrap break-words">{r.content}</p>
                     </div>
                     {r.author_id === userId && (
