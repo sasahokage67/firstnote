@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { FORUM_CODE } from "@/lib/forum";
 
 type T = Database["public"]["Tables"];
 export type Profile = T["profiles"]["Row"];
@@ -18,7 +17,7 @@ export function useMyWorkspaces() {
     queryFn: async () => {
       const { data, error } = await supabase.from("workspaces").select("*").order("created_at");
       if (error) throw error;
-      return data.filter((w) => w.invite_code !== FORUM_CODE); // the shared forum is not a team
+      return data;
     },
   });
 }

@@ -1,62 +1,18 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Heart, MessageCircle, Trash2, Globe2, ArrowUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import type { Journal, Profile } from "@/hooks/use-workspace-data";
+import type { Profile } from "@/hooks/use-workspace-data";
 import { useHomeCountry } from "@/components/CountryField";
 import { COUNTRIES, type CountryCode } from "@/lib/events";
-import { POST_MAX, ensureForum, parseMeta } from "@/lib/forum";
+import { POST_MAX, loadFeed, type Feed, type ForumPost } from "@/lib/forum";
 import { useI18n, type TFn } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { MemberAvatar } from "./shared";
 
-type Post = Journal & { co: CountryCode | null };
-type Feed = {
-  forumId: string;
-  posts: Post[];
-  replies: Map<string, Journal[]>;
-  likes: Map<string, Journal[]>;
-  people: Map<string, Profile>;
-};
-
-async function loadFeed(): Promise<Feed> {
-  const forumId = await ensureForum();
-  const { data, error } = await supabase
-    .from("journal_entries")
-    .select("*")
-    .eq("workspace_id", forumId)
-    .order("created_at", { ascending: false })
-    .limit(600);
-  if (error) throw error;
-
-  const posts: Post[] = [];
-  const replies = new Map<string, Journal[]>();
-  const likes = new Map<string, Journal[]>();
-  for (const row of data) {
-    const m = parseMeta(row.title);
-    if (!m) continue;
-    if (m.k === "post") posts.push({ ...row, co: m.co ?? null });
-    else {
-      const map = m.k === "reply" ? replies : likes;
-      map.set(m.p, [...(map.get(m.p) ?? []), row]);
-    }
-  }
-  for (const r of replies.values()) r.reverse(); // oldest reply first
-
-  const ids = [...new Set(data.map((r) => r.author_id))];
-  const people = new Map<string, Profile>();
-  if (ids.length) {
-    const { data: mem } = await supabase
-      .from("workspace_members")
-      .select("user_id, profiles(*)")
-      .eq("workspace_id", forumId)
-      .in("user_id", ids);
-    for (const m of mem ?? []) if (m.profiles) people.set(m.user_id, m.profiles as Profile);
-  }
-  return { forumId, posts, replies, likes, people };
-}
+type Post = ForumPost;
 
 function ago(iso: string, locale: string, t: TFn) {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
@@ -74,33 +30,42 @@ export function Forum({ userId, me }: { userId: string; me: Profile | null }) {
   const { t } = useI18n();
   const home = useHomeCountry();
   const qc = useQueryClient();
-  const feed = useQuery({ queryKey: ["forum"], queryFn: loadFeed, refetchInterval: 20_000 });
+  const feed = useQuery({ queryKey: ["forum"], queryFn: loadFeed, refetchInterval: 60_000 });
   const [scope, setScope] = useState<"all" | "mine">("all");
   const refresh = () => qc.invalidateQueries({ queryKey: ["forum"] });
+
+  // Live updates: new posts, replies and likes from anyone.
+  useEffect(() => {
+    const ch = supabase
+      .channel(`forum-${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "forum_posts" }, () => qc.invalidateQueries({ queryKey: ["forum"] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "forum_likes" }, () => qc.invalidateQueries({ queryKey: ["forum"] }))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [qc]);
 
   const shown = useMemo(() => {
     const p = feed.data?.posts ?? [];
     return scope === "mine" && home.country ? p.filter((x) => x.co === home.country) : p;
   }, [feed.data, scope, home.country]);
 
-  async function write(title: object, content: string) {
-    const forumId = feed.data?.forumId ?? (await ensureForum());
-    const { error } = await supabase.from("journal_entries").insert({ workspace_id: forumId, title: JSON.stringify(title), content });
+  async function write(content: string, parentId: string | null) {
+    const { error } = await supabase.from("forum_posts").insert({ content, parent_id: parentId, country: parentId ? null : home.country });
     if (error) { toast.error(error.message); return false; }
     refresh();
     return true;
   }
   async function remove(id: string) {
     if (!window.confirm(t("fr.deleteConfirm"))) return;
-    const { error } = await supabase.from("journal_entries").delete().eq("id", id);
+    const { error } = await supabase.from("forum_posts").delete().eq("id", id);
     if (error) toast.error(error.message); else refresh();
   }
   async function toggleLike(postId: string) {
-    const mine = feed.data?.likes.get(postId)?.find((l) => l.author_id === userId);
-    if (mine) {
-      const { error } = await supabase.from("journal_entries").delete().eq("id", mine.id);
-      if (error) toast.error(error.message); else refresh();
-    } else await write({ k: "like", p: postId }, "");
+    const liked = feed.data?.likes.get(postId)?.includes(userId);
+    const { error } = liked
+      ? await supabase.from("forum_likes").delete().eq("post_id", postId).eq("user_id", userId)
+      : await supabase.from("forum_likes").insert({ post_id: postId });
+    if (error) toast.error(error.message); else refresh();
   }
 
   const myFlag = flagOf(home.country);
@@ -125,7 +90,7 @@ export function Forum({ userId, me }: { userId: string; me: Profile | null }) {
         )}
       </div>
 
-      <Composer me={me} onPost={(text) => write({ k: "post", co: home.country }, text)} />
+      <Composer me={me} onPost={(text) => write(text, null)} />
 
       <div className="mt-5 space-y-3">
         {feed.isLoading && [0, 1, 2].map((i) => <div key={i} className="glass h-28 animate-pulse" />)}
@@ -141,7 +106,7 @@ export function Forum({ userId, me }: { userId: string; me: Profile | null }) {
         {feed.data && shown.map((p) => (
           <PostCard key={p.id} post={p} feed={feed.data} userId={userId} me={me}
             onLike={() => toggleLike(p.id)} onDelete={remove}
-            onReply={(text) => write({ k: "reply", p: p.id }, text)} />
+            onReply={(text) => write(text, p.id)} />
         ))}
       </div>
     </div>
@@ -214,7 +179,7 @@ function PostCard({ post, feed, userId, me, onLike, onDelete, onReply }: {
   const author = feed.people.get(post.author_id);
   const replies = feed.replies.get(post.id) ?? [];
   const likes = feed.likes.get(post.id) ?? [];
-  const liked = likes.some((l) => l.author_id === userId);
+  const liked = likes.includes(userId);
 
   return (
     <article className="glass p-4 transition-colors hover:border-primary/30">

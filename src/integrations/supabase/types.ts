@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      forum_likes: {
+        Row: { created_at: string; post_id: string; user_id: string }
+        Insert: { created_at?: string; post_id: string; user_id?: string }
+        Update: { created_at?: string; post_id?: string; user_id?: string }
+        Relationships: [
+          { foreignKeyName: "forum_likes_post_id_fkey"; columns: ["post_id"]; isOneToOne: false; referencedRelation: "forum_posts"; referencedColumns: ["id"] },
+          { foreignKeyName: "forum_likes_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      forum_posts: {
+        Row: { author_id: string; content: string; country: string | null; created_at: string; id: string; parent_id: string | null }
+        Insert: { author_id?: string; content: string; country?: string | null; created_at?: string; id?: string; parent_id?: string | null }
+        Update: { author_id?: string; content?: string; country?: string | null; created_at?: string; id?: string; parent_id?: string | null }
+        Relationships: [
+          { foreignKeyName: "forum_posts_author_id_fkey"; columns: ["author_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "forum_posts_parent_id_fkey"; columns: ["parent_id"]; isOneToOne: false; referencedRelation: "forum_posts"; referencedColumns: ["id"] },
+        ]
+      }
       journal_entries: {
         Row: {
           author_id: string

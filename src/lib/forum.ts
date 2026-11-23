@@ -1,40 +1,55 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { CountryCode } from "./events";
+import type { Database } from "@/integrations/supabase/types";
+import type { Profile } from "@/hooks/use-workspace-data";
+import { COUNTRIES, type CountryCode } from "./events";
 
-/**
- * The forum lives in one shared workspace that every user joins on first visit.
- * Posts, replies and likes are rows of `journal_entries` in that workspace; the row's
- * `title` holds a small JSON tag saying which kind of row it is.
- */
-export const FORUM_CODE: string = import.meta.env["VITE_FORUM_CODE"] ?? "FORUM_CODE_PENDING";
 export const POST_MAX = 280;
 
-export type ForumMeta =
-  | { k: "post"; co?: CountryCode | null }
-  | { k: "reply"; p: string }
-  | { k: "like"; p: string };
+type Row = Database["public"]["Tables"]["forum_posts"]["Row"];
+export type ForumPost = Row & { co: CountryCode | null };
+export type Feed = {
+  posts: ForumPost[];
+  replies: Map<string, ForumPost[]>;
+  likes: Map<string, string[]>; // post id → user ids
+  people: Map<string, Profile>;
+};
 
-export function parseMeta(title: string): ForumMeta | null {
-  if (!title.startsWith("{")) return null;
-  try {
-    const m = JSON.parse(title) as ForumMeta;
-    return m && typeof m === "object" && "k" in m ? m : null;
-  } catch {
-    return null;
+const asCountry = (c: string | null) => (COUNTRIES.some((x) => x.code === c) ? (c as CountryCode) : null);
+
+/** Latest top-level posts with their replies, likes and authors. */
+export async function loadFeed(): Promise<Feed> {
+  const { data: top, error } = await supabase
+    .from("forum_posts")
+    .select("*")
+    .is("parent_id", null)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+
+  const ids = top.map((p) => p.id);
+  const [rep, lik] = ids.length
+    ? await Promise.all([
+        supabase.from("forum_posts").select("*").in("parent_id", ids).order("created_at"),
+        supabase.from("forum_likes").select("post_id, user_id").in("post_id", ids),
+      ])
+    : [{ data: [], error: null }, { data: [], error: null }];
+  if (rep.error) throw rep.error;
+  if (lik.error) throw lik.error;
+
+  const replies = new Map<string, ForumPost[]>();
+  for (const r of rep.data ?? []) {
+    const list = replies.get(r.parent_id!) ?? [];
+    list.push({ ...r, co: asCountry(r.country) });
+    replies.set(r.parent_id!, list);
   }
-}
+  const likes = new Map<string, string[]>();
+  for (const l of lik.data ?? []) likes.set(l.post_id, [...(likes.get(l.post_id) ?? []), l.user_id]);
 
-let forumId: Promise<string> | null = null;
-
-/** The forum workspace id, joining it first if this user is not a member yet. */
-export function ensureForum(): Promise<string> {
-  forumId ??= (async () => {
-    const { data } = await supabase.from("workspaces").select("id").eq("invite_code", FORUM_CODE).maybeSingle();
-    if (data) return data.id;
-    const { data: id, error } = await supabase.rpc("join_workspace", { _code: FORUM_CODE });
-    if (error || !id) throw error ?? new Error("Forum is not available");
-    return id;
-  })();
-  forumId.catch(() => { forumId = null; });
-  return forumId;
+  const authors = [...new Set([...top, ...(rep.data ?? [])].map((p) => p.author_id))];
+  const people = new Map<string, Profile>();
+  if (authors.length) {
+    const { data: prof } = await supabase.from("profiles").select("*").in("id", authors);
+    for (const p of prof ?? []) people.set(p.id, p);
+  }
+  return { posts: top.map((p) => ({ ...p, co: asCountry(p.country) })), replies, likes, people };
 }
