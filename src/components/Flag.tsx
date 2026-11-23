@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 
 const FILE: Record<CountryCode, string> = {
   KZ: "kz.png", US: "us.svg", CA: "ca.svg", RO: "ro.svg", TH: "th.svg", BR: "br.png", GR: "gr.svg", JM: "jm.svg",
+  GB: "gb.svg", IL: "il.svg", MX: "mx.svg", AU: "au.svg", CN: "cn.svg", IN: "in.svg", VN: "vn.svg",
 };
 
 /** Country flag as an image — emoji flags don't render on Windows. */

@@ -51,10 +51,47 @@ export const AREAS: Record<CountryCode, Record<string, string>> = {
     "07": "Trelawny", "08": "St. James", "09": "Hanover", "10": "Westmoreland", "11": "St. Elizabeth",
     "12": "Manchester", "13": "Clarendon", "14": "St. Catherine",
   },
+  GB: {
+    "ENG": "England", "SCT": "Scotland", "WLS": "Wales", "NIR": "Northern Ireland",
+  },
+  IL: {
+    "TA": "Tel Aviv", "M": "Central", "JM": "Jerusalem", "HA": "Haifa", "Z": "North", "D": "South",
+  },
+  MX: {
+    "AGU": "Aguascalientes", "BCN": "Baja California", "BCS": "Baja California Sur", "CAM": "Campeche",
+    "CHP": "Chiapas", "CHH": "Chihuahua", "CMX": "Ciudad de México", "COA": "Coahuila", "COL": "Colima",
+    "DUR": "Durango", "GUA": "Guanajuato", "GRO": "Guerrero", "HID": "Hidalgo", "JAL": "Jalisco",
+    "MEX": "Estado de México", "MIC": "Michoacán", "MOR": "Morelos", "NAY": "Nayarit", "NLE": "Nuevo León",
+    "OAX": "Oaxaca", "PUE": "Puebla", "QUE": "Querétaro", "ROO": "Quintana Roo", "SLP": "San Luis Potosí",
+    "SIN": "Sinaloa", "SON": "Sonora", "TAB": "Tabasco", "TAM": "Tamaulipas", "TLA": "Tlaxcala", "VER": "Veracruz",
+    "YUC": "Yucatán", "ZAC": "Zacatecas",
+  },
+  AU: {
+    "NSW": "New South Wales", "VIC": "Victoria", "QLD": "Queensland", "WA": "Western Australia",
+    "SA": "South Australia", "TAS": "Tasmania", "ACT": "Australian Capital Territory", "NT": "Northern Territory",
+  },
+  CN: {
+    "BJ": "Beijing", "SH": "Shanghai", "TJ": "Tianjin", "CQ": "Chongqing", "GD": "Guangdong", "ZJ": "Zhejiang",
+    "JS": "Jiangsu", "SD": "Shandong", "HN": "Hunan", "HB": "Hubei", "HA": "Henan", "HE": "Hebei", "SC": "Sichuan",
+    "FJ": "Fujian", "AH": "Anhui", "JX": "Jiangxi", "SN": "Shaanxi", "SX": "Shanxi", "LN": "Liaoning", "JL": "Jilin",
+    "HL": "Heilongjiang", "GX": "Guangxi", "YN": "Yunnan", "GZ": "Guizhou", "HI": "Hainan", "GS": "Gansu",
+    "NM": "Inner Mongolia", "XJ": "Xinjiang", "NX": "Ningxia", "QH": "Qinghai", "XZ": "Tibet",
+  },
+  IN: {
+    "DL": "Delhi NCR", "MH": "Maharashtra", "KA": "Karnataka", "TG": "Telangana", "TN": "Tamil Nadu", "GJ": "Gujarat",
+    "WB": "West Bengal", "UP": "Uttar Pradesh", "RJ": "Rajasthan", "KL": "Kerala", "AP": "Andhra Pradesh",
+    "HR": "Haryana", "PB": "Punjab", "MP": "Madhya Pradesh", "OR": "Odisha", "BR": "Bihar", "AS": "Assam",
+    "CT": "Chhattisgarh", "JH": "Jharkhand", "UT": "Uttarakhand", "HP": "Himachal Pradesh", "GA": "Goa",
+    "CH": "Chandigarh", "JK": "Jammu and Kashmir", "PY": "Puducherry",
+  },
+  VN: {
+    "HN": "Hà Nội", "SG": "Ho Chi Minh City", "DN": "Đà Nẵng", "HP": "Hải Phòng", "CT": "Cần Thơ",
+  },
 };
 
 export const AREA_LABEL: Record<CountryCode, string> = {
   KZ: "City / region", US: "State", CA: "Province", RO: "County (județ)", TH: "Province", BR: "State", GR: "Region", JM: "Parish",
+  GB: "Nation", IL: "District", MX: "State", AU: "State", CN: "Province", IN: "State", VN: "City / province",
 };
 
 /** Cities that belong to an area even when FIRST files them under another code (e.g. Semey is now in Abai Region). */
@@ -120,6 +157,18 @@ const BR_TZ: Record<string, string> = {
 const COUNTRY_TZ: Record<CountryCode, string> = {
   KZ: "Asia/Qyzylorda", RO: "Europe/Bucharest", TH: "Asia/Bangkok", US: "America/New_York", CA: "America/Toronto", BR: "America/Sao_Paulo",
   GR: "Europe/Athens", JM: "America/Jamaica",
+  GB: "Europe/London", IL: "Asia/Jerusalem", MX: "America/Mexico_City", AU: "Australia/Sydney", CN: "Asia/Shanghai",
+  IN: "Asia/Kolkata", VN: "Asia/Ho_Chi_Minh",
+};
+// Multi-zone countries: zone per state (everything else uses the country default above).
+export const AU_TZ: Record<string, string> = {
+  NSW: "Australia/Sydney", ACT: "Australia/Sydney", VIC: "Australia/Melbourne", TAS: "Australia/Hobart",
+  QLD: "Australia/Brisbane", SA: "Australia/Adelaide", NT: "Australia/Darwin", WA: "Australia/Perth",
+};
+export const MX_TZ: Record<string, string> = {
+  BCN: "America/Tijuana", BCS: "America/Mazatlan", SIN: "America/Mazatlan", NAY: "America/Mazatlan", SON: "America/Hermosillo",
+  CHH: "America/Chihuahua", COA: "America/Monterrey", NLE: "America/Monterrey", TAM: "America/Monterrey", DUR: "America/Monterrey",
+  ROO: "America/Cancun", YUC: "America/Merida", CAM: "America/Merida",
 };
 
 /**
@@ -131,5 +180,7 @@ export function areaTimeZone(co: CountryCode | null, area: string | null): strin
   if (co === "US") return area ? US_STATE_TZ[area] : undefined;
   if (co === "CA") return area ? CA_TZ[area] : undefined;
   if (co === "BR") return area ? BR_TZ[area] ?? "America/Sao_Paulo" : undefined;
+  if (co === "AU") return area ? AU_TZ[area] ?? COUNTRY_TZ.AU : undefined;
+  if (co === "MX") return area ? MX_TZ[area] ?? COUNTRY_TZ.MX : undefined;
   return COUNTRY_TZ[co];
 }

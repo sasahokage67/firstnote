@@ -283,7 +283,7 @@ export function Overview({ data }: WsProps) {
               <p className="py-6 text-sm text-muted-foreground">Loading events…</p>
             ) : list.length === 0 ? (
               <div className="py-6 text-sm text-muted-foreground">
-                <p>{country === "TH" ? t("ov.thNote") : error ? t("ov.loadFail") : t("ov.noMatch")}</p>
+                <p>{country === "TH" ? t("ov.thNote") : country === "VN" ? t("ov.vnNote") : error ? t("ov.loadFail") : t("ov.noMatch")}</p>
               </div>
             ) : (
               (() => {

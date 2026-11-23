@@ -5,7 +5,8 @@ from datetime import datetime
 raw = json.load(open(sys.argv[1]))
 out_path = sys.argv[2]
 
-COUNTRIES = {"USA": "US", "Canada": "CA", "Romania": "RO", "Brazil": "BR", "Kazakhstan": "KZ", "Thailand": "TH", "Greece": "GR", "Jamaica": "JM"}
+COUNTRIES = {"USA": "US", "Canada": "CA", "Romania": "RO", "Brazil": "BR", "Kazakhstan": "KZ", "Thailand": "TH", "Greece": "GR", "Jamaica": "JM",
+             "United Kingdom": "GB", "Israel": "IL", "Mexico": "MX", "Australia": "AU", "China": "CN", "India": "IN", "Vietnam": "VN"}
 
 US_TZ = {
     **dict.fromkeys("CT DE DC FL GA IN KY ME MD MA MI NH NJ NY NC OH PA RI SC VT VA WV PR".split(), "America/New_York"),
@@ -70,6 +71,16 @@ def tz_for(co, st, city):
         return "Europe/Athens"
     if co == "JM":
         return "America/Jamaica"
+    if co == "AU":
+        return {"NSW": "Australia/Sydney", "ACT": "Australia/Sydney", "VIC": "Australia/Melbourne", "TAS": "Australia/Hobart",
+                "QLD": "Australia/Brisbane", "SA": "Australia/Adelaide", "NT": "Australia/Darwin", "WA": "Australia/Perth"}.get(st, "Australia/Sydney")
+    if co == "MX":
+        return {"BCN": "America/Tijuana", "BCS": "America/Mazatlan", "SIN": "America/Mazatlan", "NAY": "America/Mazatlan",
+                "SON": "America/Hermosillo", "CHH": "America/Chihuahua", "COA": "America/Monterrey", "NLE": "America/Monterrey",
+                "TAM": "America/Monterrey", "DUR": "America/Monterrey", "ROO": "America/Cancun", "YUC": "America/Merida",
+                "CAM": "America/Merida"}.get(st, "America/Mexico_City")
+    if co in ("GB", "IL", "CN", "IN", "VN"):
+        return {"GB": "Europe/London", "IL": "Asia/Jerusalem", "CN": "Asia/Shanghai", "IN": "Asia/Kolkata", "VN": "Asia/Ho_Chi_Minh"}[co]
     if co == "TH":
         return "Asia/Bangkok"
     return "UTC"
@@ -99,7 +110,7 @@ def dates(s):
 events = []
 for e in raw:
     if not e["loc"]: continue  # "Event in planning" – no date/place yet
-    m = re.match(r"^(.*), ?([^ ,]+) (\w+)$", e["loc"])
+    m = re.match(r"^(.*), ?([^ ,]+) ([A-Z][\w ]+)$", e["loc"])
     if not m: continue
     city, st, country = m.groups()
     co = COUNTRIES.get(country)
