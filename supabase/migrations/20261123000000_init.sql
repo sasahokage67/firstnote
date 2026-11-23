@@ -222,3 +222,26 @@ begin
     end if;
   end loop;
 end $$;
+
+-- ──────────────────── Accounts overview (admin) ──────────────
+-- All accounts in one table for the dashboard: Table Editor → schema "admin" → accounts.
+-- Lives outside "public", so the website API can't read it — only you in the dashboard.
+create schema if not exists admin;
+revoke all on schema admin from anon, authenticated;
+
+create or replace view admin.accounts as
+select
+  u.id,
+  u.email,
+  p.full_name,
+  p.team_role,
+  u.raw_user_meta_data ->> 'country' as country,
+  u.raw_user_meta_data ->> 'area' as area,
+  (select count(*) from public.workspace_members m where m.user_id = u.id) as teams,
+  (select count(*) from public.forum_posts f where f.author_id = u.id) as forum_posts,
+  u.email_confirmed_at is not null as email_confirmed,
+  u.created_at,
+  u.last_sign_in_at
+from auth.users u
+left join public.profiles p on p.id = u.id
+order by u.created_at desc;
