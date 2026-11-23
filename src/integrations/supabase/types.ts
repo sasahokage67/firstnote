@@ -24,9 +24,9 @@ export type Database = {
         ]
       }
       forum_posts: {
-        Row: { author_id: string; content: string; country: string | null; created_at: string; id: string; parent_id: string | null }
-        Insert: { author_id?: string; content: string; country?: string | null; created_at?: string; id?: string; parent_id?: string | null }
-        Update: { author_id?: string; content?: string; country?: string | null; created_at?: string; id?: string; parent_id?: string | null }
+        Row: { attachments: Json; author_id: string; content: string; country: string | null; created_at: string; id: string; parent_id: string | null }
+        Insert: { attachments?: Json; author_id?: string; content: string; country?: string | null; created_at?: string; id?: string; parent_id?: string | null }
+        Update: { attachments?: Json; author_id?: string; content?: string; country?: string | null; created_at?: string; id?: string; parent_id?: string | null }
         Relationships: [
           { foreignKeyName: "forum_posts_author_id_fkey"; columns: ["author_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
           { foreignKeyName: "forum_posts_parent_id_fkey"; columns: ["parent_id"]; isOneToOne: false; referencedRelation: "forum_posts"; referencedColumns: ["id"] },
